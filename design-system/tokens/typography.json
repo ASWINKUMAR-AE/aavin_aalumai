@@ -1,0 +1,21 @@
+{
+  "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+  "tamilFontFamily": "Noto Sans Tamil, system-ui, sans-serif",
+  "fontSize": {
+    "xs": "12px",
+    "sm": "14px",
+    "base": "16px",
+    "lg": "18px",
+    "xl": "20px",
+    "2xl": "24px",
+    "3xl": "30px",
+    "4xl": "36px",
+    "counter": "48px"
+  },
+  "fontWeight": {
+    "normal": 400,
+    "medium": 500,
+    "semibold": 600,
+    "bold": 700
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "brand": {
+    "name": "Aavin",
+    "application": "Aavin Aalumai Shift Counter Ledger",
+    "subTitle": "Production-Grade Industrial Milk Production Monitoring & Tamper-Evident Evidence Platform",
+    "tamilTitle": "ஆவின் ஆளுமை ஷிப்ட் கவுண்டர் லெட்ஜர்",
+    "logo": "assets/brand/aavin-logo.png"
+  },
+  "colors": {
+    "primary": "#017CCA",
+    "primaryDark": "#014A97",
+    "primaryLight": "#027DCB",
+    "accentBlue": "#0266B2",
+    "accentGreen": "#7CB736",
+    "background": "#FFFFFF",
+    "surface": "#F4F9FD",
+    "surfaceSubtle": "#EBF5FC",
+    "border": "#D3E7F7",
+    "borderSubtle": "#E8F3FA",
+    "textPrimary": "#0A1C30",
+    "textSecondary": "#4A5F73",
+    "textMuted": "#8A9BA8",
+    "textInverse": "#FFFFFF",
+    "success": "#16834A",
+    "warning": "#D99000",
+    "error": "#C62828",
+    "info": "#017CCA"
+  },
+  "typography": {
+    "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+    "tamilFontFamily": "Noto Sans Tamil, system-ui, sans-serif",
+    "fontSize": {
+      "xs": "12px",
+      "sm": "14px",
+      "base": "16px",
+      "lg": "18px",
+      "xl": "20px",
+      "2xl": "24px",
+      "3xl": "30px",
+      "4xl": "36px",
+      "counter": "48px"
+    },
+    "fontWeight": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    }
+  },
+  "spacing": {
+    "1": "4px",
+    "2": "8px",
+    "3": "12px",
+    "4": "16px",
+    "5": "20px",
+    "6": "24px",
+    "8": "32px",
+    "10": "40px",
+    "12": "48px"
+  },
+  "radius": {
+    "sm": "6px",
+    "md": "8px",
+    "lg": "12px",
+    "xl": "16px",
+    "full": "9999px"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgba(1, 74, 151, 0.05)",
+    "md": "0 4px 6px -1px rgba(1, 74, 151, 0.08), 0 2px 4px -1px rgba(1, 74, 151, 0.04)",
+    "lg": "0 10px 15px -3px rgba(1, 74, 151, 0.1), 0 4px 6px -2px rgba(1, 74, 151, 0.05)"
+  }
+}

@@ -1,119 +1,70 @@
-# Aavin Smart Cattle Passport — Milk Safety Twin
+# Aavin Aalumai Shift Counter Ledger
+### Production-Grade Industrial Milk Production Monitoring & Tamper-Evident Evidence Platform
 
-Full-stack dairy management ecosystem for the Aavin milk collection network in Madurai District, Tamil Nadu, India.
+![Aavin Logo](assets/brand/aavin-logo.png)
 
-**Core End-to-End Workflow:**
-**Cow identification → Health check → Milk safety decision → Milk collection & analysis → Farmer payment → Aavin administration**
-
----
-
-## Key Features
-
-- 🐄 **Digital Cattle Passport & Opaque QR Tokens:** Permanent history of cattle health, breeding, milk yields, and clinical treatments.
-- 🧪 **Deterministic Milk Safety Twin Engine:** Evaluates animal health, veterinary withdrawal restrictions, and analyzer test readings (Fat %, SNF %, Temp, Adulteration) to generate CLEAR, REVIEW, or HOLD decisions.
-- 🩺 **Veterinary Clinical & Withdrawal Management:** Prescribe treatments with automated withdrawal period calculation and live quarantine locking.
-- 🥛 **Collection Centre Intake:** Analyzer measurements entry, instant safety decision reveal animation, and digital receipt generation.
-- 💰 **Transparent 15-Day Fortnight Billing:** Quality incentives, automatic rate calculation, and cycle payment approvals.
-- 🚛 **Milk Transport Logistics:** Batch assembly, chilled tanker temperature logs, custody tracking, and discrepancy reporting.
-- 🤖 **Backend AI Advisor (OpenRouter & Own API):** Grounded advisory in Tamil (தமிழ்) and English. AI fallback disabled by default and never silent. Safety decisions operate 100% independently of AI.
-- 🎨 **Native iOS Design & Motion:** Grouped inset cards, Cupertino typography scale, smooth Reanimated spring feedback, skeleton shimmer, and dark mode.
+Full-stack tamper-evident industrial dairy production monitoring platform designed for the **Aavin** dairy network. Digitizes cumulative packet counters from Vertical Form Fill Seal (VFFS) pouch packaging machines at shift boundaries, securing every reading in an independent SHA-256 cryptographic hash chain backed by photographic evidence, in-app OCR, two-person supervised witnessed resets, and daily signed external hash anchors.
 
 ---
 
-## Technology Stack
+## 🏛️ System Components
 
-- **Mobile Frontend:** React Native 0.81.4, Expo SDK 54, Expo Router v6, TypeScript strict, Expo Camera, Expo Haptics, Reanimated, Svg Charts.
-- **Backend Server:** Node.js Express TypeScript, MySQL (`mysql2` pool with prepared statements), JWT access & refresh tokens, Socket.IO, Helmet, Rate Limiting, Zod validation.
-- **Database:** MySQL via XAMPP/phpMyAdmin (`aavin_milkflow`), InnoDB, foreign keys, DECIMAL measurements.
+1. **Backend API (`backend/`)**: Python 3.12+ FastAPI, SQLAlchemy 2.x, Alembic, PostgreSQL / SQLite (zero-config dev fallback), Pydantic v2, Argon2id, JWT with refresh-token rotation, MinIO / S3 evidence storage, Redis background tasks.
+2. **Web Dashboard (`dashboard/`)**: React 18, TypeScript, Vite, Tailwind CSS, Recharts, TanStack Query, Lucide icons, responsive industrial theme extracted from the official Aavin logo.
+3. **Mobile Application (`mobile/`)**: Flutter Android application with Material 3, Riverpod, GoRouter, in-app camera capture (gallery upload disabled for evidence integrity), Google ML Kit OCR, offline encrypted SQLite queue, and monotonic time synchronization.
+4. **Design System (`design-system/`)**: Centralized design tokens (colors, typography, spacing, radius, shadows) extracted directly from the official Aavin Aalumai logo (`#017CCA`, `#014A97`, `#7CB736`).
 
 ---
 
-## 🚀 Single Command to Run Full Ecosystem (Website + Backend + Mobile App)
+## 🚀 Quick Start (Development)
 
+### 1. Backend (FastAPI)
 ```bash
-npm start
+cd backend
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+
+pip install -r requirements.txt
+python -m app.db.init_db    # Seeds machines (7), heads (14), shifts (3), roles (4), demo users & genesis hashes
+uvicorn app.main:app --reload --port 8000
 ```
-*(or `npm run dev`)*
+- API Docs (Swagger UI): `http://localhost:8000/docs`
+- Health Check: `http://localhost:8000/api/v1/health`
 
-> ✨ **What `npm start` does in one single command:**
-> 1. Starts the **Node.js Express TypeScript Backend & WebSocket Server** on port 4000.
-> 2. Hosts the **Aavin Cattle Digital Passport & Live QR Code Website** at `http://localhost:4000/qr-portal`.
-> 3. Automatically opens the **Web QR Portal in your default browser**.
-> 4. Launches the **Expo Mobile App Metro Bundler** on port 8081 with an in-terminal QR code for instant scanning via the **Expo Go** mobile app.
-
----
-
-## 🌐 Endpoints & URLs Summary
-
-- **🖥️ Web QR Code Portal (Desktop Browser):** `http://localhost:4000/qr-portal` (or `http://localhost:4000`)
-- **📱 Expo Go Mobile App:** `exp://192.168.0.12:8081` (Auto-detected LAN IP)
-- **💻 Metro Web Dev Server:** `http://localhost:8081`
-- **🚀 Backend REST API & WebSocket:** `http://localhost:4000/api/v1`
-
----
-
-## Quick Start Guide
-
-### 1. Database (XAMPP / phpMyAdmin)
-1. Start **Apache** and **MySQL** in XAMPP.
-2. In `http://localhost/phpmyadmin/`, import `database/schema.sql`.
-3. Select database `aavin_milkflow` and import `database/seed.sql`.
-
-### 2. Run Full Project (Single Command)
+### 2. Official Web Dashboard (React + Vite)
 ```bash
-npm start
+cd dashboard
+npm install
+npm run dev
 ```
-- **Displaying QR Code in Terminal:** The Expo dev server will print the QR code in your terminal log under the `[EXPO]` stream.
-- **Viewing QR in Browser:** You can also open the Metro Bundler web interface in your browser (usually `http://localhost:8081`) to see a high-resolution QR code.
-- **Scanning:** Open **Expo Go** on Android or Camera on iOS, scan the QR code to load the app.
-- **Tunnel Mode (If on mobile hotspot/restricted Wi-Fi):** `npx expo start --tunnel`
+- Web Dashboard: `http://localhost:5173`
+- Default Login Credentials:
+  - **Official**: `official@aavin.tn.gov.in` / `Official@123`
+  - **Supervisor**: `supervisor@aavin.tn.gov.in` / `Supervisor@123`
+  - **Worker**: `worker@aavin.tn.gov.in` / `Worker@123`
+  - **Admin**: `admin@aavin.tn.gov.in` / `Admin@123`
 
-### 3. Individual Component Commands (Optional)
-- **Backend Only:** `npm run backend`
-- **Mobile App Only:** `npm run expo`
-
----
-
-## Demo Accounts (Password: `Password@123`)
-
-| Role | Username | Mobile | Description |
-| :--- | :--- | :--- | :--- |
-| **Aavin Admin** | `admin_aavin` | `9842000001` | Operations, AI Settings, Audit, Review |
-| **Farmer (Owner 1)** | `farmer_murugan` | `9842000002` | Melur Rural, Cows 1001 & 1002 (Under Treatment) |
-| **Farmer (Owner 2)** | `farmer_selvi` | `9842000003` | Navinipatti, Cows 1003 & 1004 |
-| **Veterinary Doctor** | `vet_anand` | `9842000004` | Dr. R. Anand BVSc, Treatments, Withdrawals |
-| **Collection Centre** | `operator_kannan` | `9842000005` | Melur CC Operator, Milk Intake & Receipts |
-| **Transport Vendor** | `vendor_kumar` | `9842000006` | Tanker Logistics to Madurai Dairy Plant |
-
-*Tip: Use the 1-Tap Quick Login buttons on the sign-in screen.*
-
----
-
-## Standalone Builds
-
-- **Android Standalone APK:** `eas build -p android --profile preview`
-- **iOS Simulator / Device:** `eas build -p ios --profile preview`
-
----
-
-## Makefile & Quick Execution
-
-You can use `make` or `npm run`:
-
+### 3. Mobile Application (Flutter)
 ```bash
-make help        # View all available make commands
-make setup       # One-step install and environment setup
-make db-init     # Initialize XAMPP MySQL database (aavin_milkflow)
-make dev         # Run full ecosystem (or npm start)
+cd mobile
+flutter pub get
+flutter run
+```
+
+### 4. Docker Compose (Full Stack)
+```bash
+docker compose up --build
 ```
 
 ---
 
-## Documentation Links
+## 🔐 Core Industrial Principles
 
-- 📘 [**XAMPP & Database Startup Guide (Step-by-Step)**](XAMPP_SETUP_GUIDE.md)
-- [System Architecture](docs/architecture.md)
-- [Setup & LAN Configuration Guide](docs/setup.md)
-- [REST API Contract Reference](docs/api.md)
-- [Demo Credentials](docs/demo-accounts.md)
-- [Verification & Test Report](docs/test-report.md)
+- **Record What Was Observed**: Store confirmed count, original OCR value, and original photographic evidence separately.
+- **Append-Only Database**: Historical readings, reset events, and hash chain records can never be edited or deleted. Database-level triggers prevent `UPDATE` and `DELETE`.
+- **SHA-256 Hash Chain**: Each of the 14 machine heads maintains an independent tamper-evident cryptographic hash chain from its genesis record.
+- **Witnessed Resets (1,000,000 Threshold)**: Resets require before/after photographs, two-person supervisor verification, and calculate production via `(1,000,000 - Prev) + New`.
+- **Time Anchoring**: Monotonic clock delta against server time anchors prevents device time manipulation.
