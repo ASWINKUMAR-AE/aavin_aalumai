@@ -1,0 +1,55 @@
+import React from "react";
+import { Tabs } from "expo-router";
+import { Colors } from "../../constants/Colors";
+import { Ionicons } from "@expo/vector-icons";
+
+export default function SupervisorLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.secondary,
+        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.border,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Overview",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bar-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="resets"
+        options={{
+          title: "Reset Approvals",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="checkmark-done-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="anomalies"
+        options={{
+          title: "Anomalies",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="alert-circle-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}

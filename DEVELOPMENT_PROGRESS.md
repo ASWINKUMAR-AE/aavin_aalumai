@@ -20,17 +20,18 @@
   - [x] Anomaly detection & production delta calculation with 1,000,000 rollover reset logic.
   - [x] 11 core unit & integration tests passing.
 
-- [ ] **PHASE 2: React Native Expo Mobile Application**
-  - [ ] App Name: `aavin aalumai` with official Aavin logo branding.
-  - [ ] Worker authentication and role-based home screen.
-  - [ ] QR scanner for machine/head identity.
-  - [ ] In-app camera capture (gallery upload blocked) with HMI framing overlay.
-  - [ ] OCR pipeline & manual confirmation flow.
-  - [ ] Offline encrypted SQLite queue & background sync.
-  - [ ] Time integrity anchoring with monotonic clock.
-  - [ ] Reset workflow with Before & After photos.
-  - [ ] Self-reported wastage entry with photo evidence.
-  - [ ] Supervisor review and reset approval queue.
+- [x] **PHASE 2: React Native Expo Mobile Application**
+  - [x] App Name: `aavin aalumai` with official Aavin logo branding.
+  - [x] Worker authentication and role-based home screen.
+  - [x] QR scanner for machine/head identity (14 heads across 7 VFFS machines).
+  - [x] In-app camera capture (gallery upload blocked) with HMI framing overlay.
+  - [x] OCR pipeline & manual confirmation flow (preserving both OCR and confirmed values).
+  - [x] Offline encrypted queue & background sync engine.
+  - [x] Time integrity anchoring with monotonic clock.
+  - [x] Reset workflow with Before & After photos and rollover calculation.
+  - [x] Self-reported wastage entry with photo evidence.
+  - [x] Supervisor review and dual-person reset approval queue.
+  - [x] Official executive mobile view and cryptographic hash chain monitor.
 
 - [ ] **PHASE 3: Official Web Dashboard**
   - [ ] React 18 + Vite + TypeScript + Tailwind CSS dashboard.
