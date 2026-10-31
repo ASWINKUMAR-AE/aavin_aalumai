@@ -125,3 +125,4 @@ export const AnomaliesPage: React.FC = () => {
     </div>
   );
 };
+

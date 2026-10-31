@@ -1,70 +1,84 @@
-# Aavin Aalumai Shift Counter Ledger
+# Aavin Aalumai Shift Counter Ledger (ஆவின் ஆளுமை)
 ### Production-Grade Industrial Milk Production Monitoring & Tamper-Evident Evidence Platform
 
-![Aavin Logo](assets/brand/aavin-logo.png)
-
-Full-stack tamper-evident industrial dairy production monitoring platform designed for the **Aavin** dairy network. Digitizes cumulative packet counters from Vertical Form Fill Seal (VFFS) pouch packaging machines at shift boundaries, securing every reading in an independent SHA-256 cryptographic hash chain backed by photographic evidence, in-app OCR, two-person supervised witnessed resets, and daily signed external hash anchors.
+An integrated dairy packaging monitoring and tamper-evident evidence ledger system engineered for **Aavin (Tamil Nadu Cooperative Milk Producers' Federation Limited)** milk plants.
 
 ---
 
-## 🏛️ System Components
+## 🥛 System Architecture
 
-1. **Backend API (`backend/`)**: Python 3.12+ FastAPI, SQLAlchemy 2.x, Alembic, PostgreSQL / SQLite (zero-config dev fallback), Pydantic v2, Argon2id, JWT with refresh-token rotation, MinIO / S3 evidence storage, Redis background tasks.
-2. **Web Dashboard (`dashboard/`)**: React 18, TypeScript, Vite, Tailwind CSS, Recharts, TanStack Query, Lucide icons, responsive industrial theme extracted from the official Aavin logo.
-3. **Mobile Application (`mobile/`)**: Flutter Android application with Material 3, Riverpod, GoRouter, in-app camera capture (gallery upload disabled for evidence integrity), Google ML Kit OCR, offline encrypted SQLite queue, and monotonic time synchronization.
-4. **Design System (`design-system/`)**: Centralized design tokens (colors, typography, spacing, radius, shadows) extracted directly from the official Aavin Aalumai logo (`#017CCA`, `#014A97`, `#7CB736`).
+The platform consists of three integrated components backed by a single authoritative database and cryptographic audit trail:
+
+1. **React Native (Expo) Mobile App**: Industrial operator and supervisor Android capture tool with guided camera HMI alignment, on-device OCR, tamper-evident hash calculation, monotonic time anchoring, and offline encrypted queuing.
+2. **FastAPI + PostgreSQL Backend**: Authoritative source of truth with append-only database triggers, independent SHA-256 hash chains per machine head, deterministic rollover production calculations `(1,000,000 - prev) + new`, anomaly detection engine, and daily KMS-signed external hash anchors.
+3. **React + TypeScript Official Web Dashboard**: Industrial desktop dashboard for Aavin General Managers and Quality Officials featuring live production tracking, side-by-side HMI evidence viewing, hash-chain verification, milk mass balance, calibration offset trends, and CSV/PDF export.
 
 ---
 
-## 🚀 Quick Start (Development)
+## 🏭 Configured Packaging Units (7 Machines • 14 Heads)
 
-### 1. Backend (FastAPI)
-```bash
-cd backend
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
+| Machine Type | Units | Heads / Machine | Total Heads | Unique QR Prefix | Rated Speed |
+| :--- | :---: | :---: | :---: | :--- | :--- |
+| **RMC VFFS** | 2 | 2 | 4 | `AAVIN://MADURAI/DAIRY/RMC-01...` | 2,500 pkts/hr |
+| **Samarpan Integrus** | 3 | 2 | 6 | `AAVIN://MADURAI/DAIRY/SAMARPAN-01...` | 2,500 pkts/hr |
+| **Atomic Engineers** | 2 | 2 | 4 | `AAVIN://MADURAI/DAIRY/ATOMIC-01...` | 2,500 pkts/hr |
+| **TOTAL** | **7** | — | **14** | All 14 Heads Genesis Sealed | Max: 3,000/hr |
 
-pip install -r requirements.txt
-python -m app.db.init_db    # Seeds machines (7), heads (14), shifts (3), roles (4), demo users & genesis hashes
-uvicorn app.main:app --reload --port 8000
-```
-- API Docs (Swagger UI): `http://localhost:8000/docs`
-- Health Check: `http://localhost:8000/api/v1/health`
+---
 
-### 2. Official Web Dashboard (React + Vite)
-```bash
-cd dashboard
-npm install
-npm run dev
-```
-- Web Dashboard: `http://localhost:5173`
-- Default Login Credentials:
-  - **Official**: `official@aavin.tn.gov.in` / `Official@123`
-  - **Supervisor**: `supervisor@aavin.tn.gov.in` / `Supervisor@123`
-  - **Worker**: `worker@aavin.tn.gov.in` / `Worker@123`
-  - **Admin**: `admin@aavin.tn.gov.in` / `Admin@123`
+## 🛡️ Critical Industrial Business Rules
 
-### 3. Mobile Application (Flutter)
-```bash
-cd mobile
-flutter pub get
-flutter run
-```
+1. **Camera-Only Evidence**: Physical HMI counter readings are captured strictly through the in-app camera with blur and glare validation. Gallery uploads and file pickers are strictly prohibited.
+2. **Append-Only Immutability**: Historical counter observations can never be edited or deleted by any user or administrator. Corrections are recorded as separate referenced records.
+3. **Dual-Person Reset Protocol**: Manual counter rollovers (threshold: 1,000,000) require Before-Reset and After-Reset photographs, worker submission, and personal supervisor witness authentication. A supervisor cannot witness their own reset.
+4. **Independent Hash Chains**: Each of the 14 heads maintains an independent SHA-256 chain starting from a deterministic Genesis block:
+   $$\text{Reading Hash} = \text{SHA256}(\text{CanonicalJSON}(\text{fields}) + \text{EvidenceSHA256} + \text{ServerTime} + \text{PrevHash})$$
+5. **Strict Wastage Separation**: Self-reported wastage remains segregated from verified wastage and is never merged with counter production figures.
+6. **Calibration Display Rule**: Recorded counter production and adjusted production (measured offset) are always displayed separately.
 
-### 4. Docker Compose (Full Stack)
+---
+
+## 🚀 Quick Start (Local Development)
+
+### 1. Docker Compose (Full Stack)
 ```bash
 docker compose up --build
 ```
+- **Web Dashboard**: `http://localhost:3000` (or `http://localhost`)
+- **FastAPI Backend & Swagger**: `http://localhost:8000/docs`
+- **MinIO Console**: `http://localhost:9001` (User: `minioadmin` / `minioadminpassword`)
+
+### 2. React Native Expo Mobile App
+```bash
+# In project root
+npx expo start
+```
+Scan the in-terminal QR code with **Expo Go** on Android or run `npx expo run:android`.
+
+### 3. Backend Direct Launch
+```bash
+cd backend
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+pip install -r requirements.txt
+python app/db/init_db.py
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
 ---
 
-## 🔐 Core Industrial Principles
+## 🔑 Demo Seed Accounts
 
-- **Record What Was Observed**: Store confirmed count, original OCR value, and original photographic evidence separately.
-- **Append-Only Database**: Historical readings, reset events, and hash chain records can never be edited or deleted. Database-level triggers prevent `UPDATE` and `DELETE`.
-- **SHA-256 Hash Chain**: Each of the 14 machine heads maintains an independent tamper-evident cryptographic hash chain from its genesis record.
-- **Witnessed Resets (1,000,000 Threshold)**: Resets require before/after photographs, two-person supervisor verification, and calculate production via `(1,000,000 - Prev) + New`.
-- **Time Anchoring**: Monotonic clock delta against server time anchors prevents device time manipulation.
+| Role | Username | Password | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Worker (Operator)** | `worker1` | `Worker@12345` | Scan QR, HMI camera capture, confirm OCR, submit readings |
+| **Supervisor** | `supervisor1` | `Supervisor@12345` | Shift monitoring, two-person reset approval, anomaly review |
+| **Official (Auditor)** | `official1` | `Official@12345` | Read-only executive dashboard, evidence viewer, hash chains |
+| **System Admin** | `admin1` | `Admin@12345` | User management, threshold settings, immutable audit logs |
+
+---
+
+## 📜 Repository Information
+- **Primary Git Repository**: `https://github.com/ASWINKUMAR-AE/aavin_aalumai.git`
+- **Default Branch**: `main`

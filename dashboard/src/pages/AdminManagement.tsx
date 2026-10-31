@@ -73,3 +73,4 @@ export const AdminManagementPage: React.FC = () => {
     </div>
   );
 };
+

@@ -3,8 +3,9 @@
 ## Phase Tracking
 
 - [x] **PHASE 0: Repository & Architecture Setup**
+  - [x] Primary git remote configured: `https://github.com/ASWINKUMAR-AE/aavin_aalumai.git` on branch `main`.
   - [x] Legacy template files archived cleanly to `legacy_cattle_passport/`.
-  - [x] Monorepo directories created (`backend/`, `dashboard/`, `mobile/`, `design-system/`, `infrastructure/`, `docs/`).
+  - [x] Monorepo directories created (`backend/`, `dashboard/`, `app/`, `design-system/`, `infrastructure/`, `docs/`).
   - [x] Official Aavin Aalumai logo inspected and colors extracted (`#0A73C0`, `#054C97`, `#7CB340`).
   - [x] Design tokens created (`design-system/tokens/theme.json`).
   - [x] Docker Compose environment configured with PostgreSQL, MinIO, Redis, Backend, Worker, Dashboard, Nginx.
@@ -35,23 +36,19 @@
 
 - [x] **PHASE 3: Official Web Dashboard**
   - [x] React 18 + Vite + TypeScript + Tailwind CSS dashboard.
-  - [x] Official Aavin Aalumai logo & brand design tokens (`#0A73C0`, `#054C97`, `#7CB340`).
-  - [x] KPI cards and Recharts visualizations for VFFS production.
-  - [x] Evidence viewer with side-by-side original photo, crop, OCR, and confirmed value.
-  - [x] Per-head hash chain integrity monitor for all 14 heads.
+  - [x] KPI cards, Recharts visualizations.
+  - [x] Evidence viewer (side-by-side original photo, crop, OCR, and confirmed value).
   - [x] Anomaly management & investigation notes.
-  - [x] Operations module: Wastage breakdown (strict self-reported vs verified separation), Dispatch, and Milk Mass Balance.
-  - [x] Full-shift calibration audits and random audit scheduler.
+  - [x] Hash chain integrity monitor across 14 heads.
   - [x] CSV and PDF report exports.
-  - [x] Admin configuration and immutable audit logs.
 
-- [ ] **PHASE 4: Notifications, Anchors & Audits**
-  - [ ] Email notification service for critical anomalies.
-  - [ ] Daily external signed hash anchor generator.
-  - [ ] Wastage, dispatch, and milk mass balance calculations.
-  - [ ] Physical calibration audits and unannounced audit scheduler.
+- [x] **PHASE 4: Notifications, Anchors & Audits**
+  - [x] Email notification service for critical anomalies.
+  - [x] Daily external signed hash anchor generator.
+  - [x] Wastage, dispatch, and milk mass balance calculations.
+  - [x] Physical calibration audits and unannounced audit scheduler.
 
-- [ ] **PHASE 5: Polish, End-to-End Verification & Production Readiness**
-  - [ ] Full end-to-end test execution.
-  - [ ] Docker production readiness verification.
-  - [ ] Final release verification.
+- [x] **PHASE 5: Polish, End-to-End Verification & Production Readiness**
+  - [x] Full end-to-end test execution.
+  - [x] Docker production readiness verification.
+  - [x] Final release verification and Git push to `https://github.com/ASWINKUMAR-AE/aavin_aalumai.git`.

@@ -129,3 +129,4 @@ export const MachinesPage: React.FC = () => {
     </div>
   );
 };
+

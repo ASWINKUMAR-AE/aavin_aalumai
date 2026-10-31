@@ -78,3 +78,4 @@ export const Sidebar: React.FC<Props> = ({ currentTab, setCurrentTab }) => {
     </aside>
   );
 };
+
