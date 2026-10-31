@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "aavin aalumai",
+    "displayName": "Aavin Aalumai Shift Counter Ledger",
+    "slug": "aavin-aalumai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/brand/aavin-aalumai-logo.png",
+    "scheme": "aavinaalumai",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/brand/aavin-aalumai-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A73C0"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aavin.aalumai",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Aavin Aalumai requires camera access for in-app HMI counter evidence capture and machine head QR identification."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/aavin-aalumai-logo.png",
+        "backgroundColor": "#0A73C0"
+      },
+      "package": "com.aavin.aalumai",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/brand/aavin-aalumai-logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Aavin Aalumai to scan machine QR codes and capture physical HMI counter displays."
+        }
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
