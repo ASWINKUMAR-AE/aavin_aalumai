@@ -175,11 +175,12 @@ function extractSideMetrics(
     const b = sideBoxes[i];
     const upper = b.text.toUpperCase();
 
-    // 1. Production Counter (Number below 'PRODUCTION')
+    // 1. Production Counter (Number directly below 'PRODUCTION' within horizontal alignment +/- 65px)
     if (upper === "PRODUCTION" || upper.includes("PROD")) {
       confidences.push(b.confidence);
-      const candidates = sideBoxes.filter((c) => c.cy > b.cy);
-      candidates.sort((a, b) => a.cy - b.cy);
+      const candidates = sideBoxes
+        .filter((c) => c.cy > b.cy && Math.abs(c.cx - b.cx) < 65)
+        .sort((a, b) => a.cy - b.cy);
       for (const c of candidates) {
         const digits = c.text.replace(/\D/g, "");
         if (digits.length >= 4 && digits.length <= 7) {
@@ -190,11 +191,12 @@ function extractSideMetrics(
       }
     }
 
-    // 2. Wastage Counter (Number below 'WASTAGE')
+    // 2. Wastage Counter (Number directly below 'WASTAGE' within horizontal alignment +/- 65px)
     if (upper === "WASTAGE" || upper.includes("WAST")) {
       confidences.push(b.confidence);
-      const candidates = sideBoxes.filter((c) => c.cy > b.cy);
-      candidates.sort((a, b) => a.cy - b.cy);
+      const candidates = sideBoxes
+        .filter((c) => c.cy > b.cy && Math.abs(c.cx - b.cx) < 65)
+        .sort((a, b) => a.cy - b.cy);
       for (const c of candidates) {
         const digits = c.text.replace(/\D/g, "");
         if (digits.length >= 1 && digits.length <= 6) {
@@ -212,10 +214,10 @@ function extractSideMetrics(
       confidences.push(b.confidence);
     }
 
-    // 4. Recipe Number (e.g. RECIPE No. 3 or 2)
+    // 4. Recipe Number (e.g. RECIPE No. 3 or 2, adjacent horizontally +/- 25px vertically)
     if (upper.includes("RECIPE")) {
       const candidates = sideBoxes
-        .filter((c) => Math.abs(c.cy - b.cy) < 50 && c.cx >= b.cx)
+        .filter((c) => Math.abs(c.cy - b.cy) < 25 && c.cx >= b.cx)
         .sort((x, y) => x.cx - y.cx);
       for (const c of candidates) {
         const digits = c.text.replace(/\D/g, "");
@@ -230,10 +232,10 @@ function extractSideMetrics(
       }
     }
 
-    // 5. Feed Time (e.g. FEED TIME 0.10)
+    // 5. Feed Time (e.g. FEED TIME 0.10, adjacent horizontally +/- 25px vertically)
     if (upper.includes("FEED TIME") || upper.includes("FEEDTIME")) {
       const candidates = sideBoxes
-        .filter((c) => Math.abs(c.cy - b.cy) < 50 && c.cx >= b.cx)
+        .filter((c) => Math.abs(c.cy - b.cy) < 25 && c.cx >= b.cx)
         .sort((x, y) => x.cx - y.cx);
       for (const c of candidates) {
         const match = c.text.match(/\d+(\.\d+)?/);
@@ -245,10 +247,10 @@ function extractSideMetrics(
       }
     }
 
-    // 6. Machine Speed (e.g. SET 50 / 65)
-    if (upper === "SET" || upper.includes("MACHINESPEED") || upper.includes("MACHINE SPEED")) {
+    // 6. Machine Speed (e.g. SET 50 / 65, adjacent horizontally +/- 25px vertically)
+    if (upper === "SET") {
       const candidates = sideBoxes
-        .filter((c) => Math.abs(c.cy - b.cy) < 50 && c.cx >= b.cx)
+        .filter((c) => Math.abs(c.cy - b.cy) < 25 && c.cx >= b.cx)
         .sort((x, y) => x.cx - y.cx);
       for (const c of candidates) {
         const digits = c.text.replace(/\D/g, "");
@@ -263,14 +265,14 @@ function extractSideMetrics(
       }
     }
 
-    // 7. Actual Speed (e.g. ACTUAL 0)
+    // 7. Actual Speed (e.g. ACTUAL 0, adjacent horizontally +/- 25px vertically)
     if (upper.includes("ACTUAL")) {
       const candidates = sideBoxes
-        .filter((c) => Math.abs(c.cy - b.cy) < 50 && c.cx >= b.cx)
+        .filter((c) => Math.abs(c.cy - b.cy) < 25 && c.cx >= b.cx)
         .sort((x, y) => x.cx - y.cx);
       for (const c of candidates) {
         const digits = c.text.replace(/\D/g, "");
-        if (digits) {
+        if (digits !== "") {
           actualSpeed = parseInt(digits, 10);
           break;
         }
@@ -393,6 +395,23 @@ export function applyTextFallback(
     headB.machineSpeed = speeds[1];
   } else if (speeds.length === 1 && headA.machineSpeed === null) {
     headA.machineSpeed = speeds[0];
+  }
+
+  // 4b. Extract Actual Speeds (numbers following 'ACTUAL')
+  const actualSpeeds: number[] = [];
+  for (let i = 0; i < normalizedLines.length; i++) {
+    if (normalizedLines[i].toUpperCase() === "ACTUAL" && i + 1 < normalizedLines.length) {
+      const nextNum = parseInt(normalizedLines[i + 1].replace(/\D/g, ""), 10);
+      if (!isNaN(nextNum) && nextNum >= 0 && nextNum <= 200) {
+        actualSpeeds.push(nextNum);
+      }
+    }
+  }
+  if (actualSpeeds.length >= 2) {
+    headA.actualSpeed = actualSpeeds[0];
+    headB.actualSpeed = actualSpeeds[1];
+  } else if (actualSpeeds.length === 1 && (headA.actualSpeed === null || headA.actualSpeed === undefined)) {
+    headA.actualSpeed = actualSpeeds[0];
   }
 
   // 5. Extract Feed Times (numbers following 'FEED TIME')

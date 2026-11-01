@@ -21,48 +21,39 @@ const MACHINES = [
     ],
   },
   {
-    code: "SAMARPAN-01",
+    code: "SMP-01",
     name: "Samarpan Integrus 1",
     type: "Samarpan",
     heads: [
-      { id: "SAMARPAN-01-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/SAMARPAN-01/HEAD_1", lastCount: 312450, delta: 3820, variant: "FCM-500 (Full Cream)", chain: "Verified" },
-      { id: "SAMARPAN-01-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/SAMARPAN-01/HEAD_2", lastCount: 310890, delta: 3740, variant: "FCM-500 (Full Cream)", chain: "Verified" },
+      { id: "SMP-01-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/SMP-01/HEAD_1", lastCount: 312450, delta: 3820, variant: "FCM-500 (Full Cream)", chain: "Verified" },
+      { id: "SMP-01-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/SMP-01/HEAD_2", lastCount: 310890, delta: 3740, variant: "FCM-500 (Full Cream)", chain: "Verified" },
     ],
   },
   {
-    code: "SAMARPAN-02",
+    code: "SMP-02",
     name: "Samarpan Integrus 2",
     type: "Samarpan",
     heads: [
-      { id: "SAMARPAN-02-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/SAMARPAN-02/HEAD_1", lastCount: 654200, delta: 4620, variant: "TM-500 (Toned)", chain: "Verified" },
-      { id: "SAMARPAN-02-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/SAMARPAN-02/HEAD_2", lastCount: 652100, delta: 4500, variant: "TM-500 (Toned)", chain: "Verified" },
+      { id: "SMP-02-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/SMP-02/HEAD_1", lastCount: 654200, delta: 4620, variant: "TM-500 (Toned)", chain: "Verified" },
+      { id: "SMP-02-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/SMP-02/HEAD_2", lastCount: 652100, delta: 4500, variant: "TM-500 (Toned)", chain: "Verified" },
     ],
   },
   {
-    code: "SAMARPAN-03",
+    code: "SMP-03",
     name: "Samarpan Integrus 3",
     type: "Samarpan",
     heads: [
-      { id: "SAMARPAN-03-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/SAMARPAN-03/HEAD_1", lastCount: 198400, delta: 2950, variant: "DTM-500 (Double Toned)", chain: "Verified" },
-      { id: "SAMARPAN-03-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/SAMARPAN-03/HEAD_2", lastCount: 197250, delta: 2890, variant: "DTM-500 (Double Toned)", chain: "Verified" },
+      { id: "SMP-03-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/SMP-03/HEAD_1", lastCount: 198400, delta: 2950, variant: "DTM-500 (Double Toned)", chain: "Verified" },
+      { id: "SMP-03-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/SMP-03/HEAD_2", lastCount: 197250, delta: 2890, variant: "DTM-500 (Double Toned)", chain: "Verified" },
     ],
   },
   {
-    code: "ATOMIC-01",
-    name: "Atomic Engineers Pouch Pack 1",
+    code: "ATM-01",
+    name: "Atomic Engineers 1",
     type: "Atomic Engineers",
     heads: [
-      { id: "ATOMIC-01-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/ATOMIC-01/HEAD_1", lastCount: 442100, delta: 3510, variant: "SM-500 (Standardized)", chain: "Verified" },
-      { id: "ATOMIC-01-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/ATOMIC-01/HEAD_2", lastCount: 440950, delta: 3420, variant: "SM-500 (Standardized)", chain: "Verified" },
-    ],
-  },
-  {
-    code: "ATOMIC-02",
-    name: "Atomic Engineers Pouch Pack 2",
-    type: "Atomic Engineers",
-    heads: [
-      { id: "ATOMIC-02-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/ATOMIC-02/HEAD_1", lastCount: 785600, delta: 4120, variant: "TM-500 (Toned)", chain: "Verified" },
-      { id: "ATOMIC-02-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/ATOMIC-02/HEAD_2", lastCount: 783400, delta: 4050, variant: "TM-500 (Toned)", chain: "Verified" },
+      { id: "ATM-01-H1", number: 1, qr: "AAVIN://MADURAI/DAIRY/ATM-01/HEAD_1", lastCount: 442100, delta: 3510, variant: "SM-500 (Standardized)", chain: "Verified" },
+      { id: "ATM-01-H2", number: 2, qr: "AAVIN://MADURAI/DAIRY/ATM-01/HEAD_2", lastCount: 440950, delta: 3420, variant: "SM-500 (Standardized)", chain: "Verified" },
     ],
   },
 ];
@@ -72,12 +63,12 @@ export const MachinesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black text-slate-900 tracking-tight">Plant VFFS Machines & 14 Packaging Heads</h2>
+          <h2 className="text-lg font-black text-slate-900 tracking-tight">Plant VFFS Machines & 12 Packaging Heads</h2>
           <p className="text-xs text-slate-500">Live monitoring of RMC, Samarpan, and Atomic Engineers dual-head units</p>
         </div>
         <div className="flex items-center space-x-2 text-xs font-bold bg-sky-50 text-sky-700 px-3 py-1.5 rounded-lg border border-sky-200">
           <Cpu className="w-4 h-4" />
-          <span>7 Machines Configured • 14 Heads Active</span>
+          <span>6 Machines Configured • 12 Heads Active</span>
         </div>
       </div>
 
@@ -129,4 +120,3 @@ export const MachinesPage: React.FC = () => {
     </div>
   );
 };
-

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -18,29 +19,34 @@ export default function CameraCaptureScreen() {
   const params = useLocalSearchParams();
   const [torch, setTorch] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [qualityCheck, setQualityCheck] = useState<"pass" | "blur" | "glare">("pass");
 
-  const lastCount = Number(params.lastCount || 845230);
-  const simulatedReading = lastCount + 285; // Simulated +285 production increment
+  const lastCount = Number(params.lastCount || 0);
 
   const handleCapture = () => {
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const sampleUri = Image.resolveAssetSource(
+        require("../../assets/hmi-sample.jpg")
+      ).uri;
+
+      setTimeout(() => {
+        setIsProcessing(false);
+        router.push({
+          pathname: "/(worker)/ocr-confirm",
+          params: {
+            headId: params.headId,
+            machineId: params.machineId,
+            machineName: params.machineName,
+            headNumber: params.headNumber,
+            lastCount: String(lastCount),
+            variantId: params.variantId,
+            photoUri: sampleUri,
+          },
+        });
+      }, 500);
+    } catch {
       setIsProcessing(false);
-      router.push({
-        pathname: "/(worker)/ocr-confirm",
-        params: {
-          headId: params.headId,
-          machineId: params.machineId,
-          machineName: params.machineName,
-          headNumber: params.headNumber,
-          lastCount: params.lastCount,
-          variantId: params.variantId,
-          detectedOcr: simulatedReading,
-          ocrConfidence: "0.984",
-        },
-      });
-    }, 1200);
+    }
   };
 
   return (
@@ -72,16 +78,14 @@ export default function CameraCaptureScreen() {
 
         {/* HMI Screen Bounding Box */}
         <View style={styles.hmiBoundingBox}>
-          <View style={styles.hmiScreenSim}>
+          <Image
+            source={require("../../assets/hmi-sample.jpg")}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.85, borderRadius: 10 }]}
+            resizeMode="cover"
+          />
+          <View style={styles.hmiScreenOverlay}>
             <Text style={styles.hmiHeader}>PLC / HMI DIGITAL COUNTER</Text>
-            <View style={styles.digitContainer}>
-              <Text style={styles.digitDisplay}>{simulatedReading.toLocaleString()}</Text>
-              <Text style={styles.digitUnit}>PACKETS</Text>
-            </View>
-            <View style={styles.hmiFooter}>
-              <Text style={styles.hmiRate}>RATE: 2,420 PKT/HR</Text>
-              <Text style={styles.hmiStatus}>STATUS: RUNNING</Text>
-            </View>
+            <Text style={styles.alignScreenText}>ALIGN COUNTER IN BRACKETS</Text>
           </View>
 
           {/* Guide Reticles */}
@@ -189,11 +193,10 @@ const styles = StyleSheet.create({
     position: "relative",
     backgroundColor: "rgba(10, 25, 47, 0.8)",
   },
-  hmiScreenSim: {
+  hmiScreenOverlay: {
     alignItems: "center",
-    padding: 16,
-    width: "90%",
-    backgroundColor: "#051622",
+    padding: 12,
+    backgroundColor: "rgba(5, 22, 34, 0.85)",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#1BA098",
@@ -203,25 +206,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#1BA098",
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  digitContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 8,
-    marginBottom: 8,
-  },
-  digitDisplay: {
+  alignScreenText: {
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    fontSize: 42,
-    fontWeight: "900",
-    color: "#DEB992",
-    letterSpacing: 2,
-  },
-  digitUnit: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "800",
-    color: "#1BA098",
+    color: "#DEB992",
+    letterSpacing: 1,
   },
   hmiFooter: {
     flexDirection: "row",

@@ -6,12 +6,12 @@
     "machine_type": "RMC",
     "total_heads": 2,
     "qr_id": "QR-001",
-    "qr_version": 4,
-    "qr_payload": "{\"type\":\"AAVIN_MACHINE\",\"version\":4,\"machine_id\":\"RMC-01\",\"qr_id\":\"QR-001\",\"plant\":\"AAVIN_MADURAI_DAIRY\",\"generated_at\":\"2026-11-01T10:33:00.621685+00:00\"}",
+    "qr_version": 6,
+    "qr_payload": "{\"type\":\"AAVIN_MACHINE\",\"version\":6,\"machine_id\":\"RMC-01\",\"qr_id\":\"QR-001\",\"plant\":\"AAVIN_MADURAI_DAIRY\",\"generated_at\":\"2026-11-01T12:28:16.357009+00:00\"}",
     "qr_status": "active",
     "is_active": true,
     "created_at": "2026-11-01T10:08:27.642902+00:00",
-    "updated_at": "2026-11-01T10:33:00.621737+00:00"
+    "updated_at": "2026-11-01T12:28:16.357067+00:00"
   },
   {
     "id": "53776504-532f-4841-81ea-400b948df9fb",

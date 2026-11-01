@@ -11,18 +11,18 @@ export const getDashboardSummary = async () => {
     return res.data;
   } catch {
     return {
-      total_machines: 7,
-      active_machines: 7,
-      total_heads: 14,
+      total_machines: 6,
+      active_machines: 6,
+      total_heads: 12,
       current_shift: "Shift 1 (Morning)",
-      expected_readings: 42,
+      expected_readings: 36,
       completed_readings: 24,
-      missing_readings: 18,
+      missing_readings: 12,
       total_recorded_production: 42180,
       total_self_reported_wastage: 180,
       total_verified_wastage: 140,
       total_good_packets: 41860,
-      active_anomalies: 2,
+      active_anomalies: 0,
       critical_anomalies: 0,
       hash_chain_status: "Verified",
       latest_daily_anchor_hash: "54ca113b8dbc9d99f018eac3528b9d21c784ee09b81239aa81f08e458760086c",
@@ -57,4 +57,48 @@ export const getMachineDisplayEvidence = async (filters: any = {}) => {
   }
 };
 
+export const getAnomalies = async (severity?: string, status?: string) => {
+  try {
+    const res = await api.get("/anomalies", { params: { severity, status } });
+    return res.data;
+  } catch {
+    return [];
+  }
+};
 
+export const getBackups = async () => {
+  try {
+    const res = await api.get("/admin/backups");
+    return res.data;
+  } catch {
+    return [];
+  }
+};
+
+export const triggerBackup = async (notes: string = "Dashboard manual backup snapshot") => {
+  const res = await api.post("/admin/backups", null, { params: { notes } });
+  return res.data;
+};
+
+export const verifyBackup = async (filename: string) => {
+  const res = await api.get(`/admin/backups/${filename}/verify`);
+  return res.data;
+};
+
+export const getShiftHandovers = async () => {
+  try {
+    const res = await api.get("/operations/shift-handover");
+    return res.data;
+  } catch {
+    return [];
+  }
+};
+
+export const getDowntimeLogs = async () => {
+  try {
+    const res = await api.get("/operations/downtime");
+    return res.data;
+  } catch {
+    return [];
+  }
+};

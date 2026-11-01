@@ -6,16 +6,14 @@ const HEAD_CHAINS = [
   { id: "RMC-01-H2", machine: "RMC-01", readingsCount: 40, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "4422f711fdb1ccae77b21901ddfa456102aa678912efc4568901aa2345bc6789" },
   { id: "RMC-02-H1", machine: "RMC-02", readingsCount: 38, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "98ab21cf4402bcde1203aa4567ef902188ff6541290bb345ac10298a00223311" },
   { id: "RMC-02-H2", machine: "RMC-02", readingsCount: 38, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "77ac90123efb45cd8901aa2345bc67890123456789abcdef1234567890abcdef" },
-  { id: "SAMARPAN-01-H1", machine: "SAMARPAN-01", readingsCount: 35, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "65de89ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef123456" },
-  { id: "SAMARPAN-01-H2", machine: "SAMARPAN-01", readingsCount: 35, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "54cd7890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef1234" },
-  { id: "SAMARPAN-02-H1", machine: "SAMARPAN-02", readingsCount: 32, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "43bc67890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef123" },
-  { id: "SAMARPAN-02-H2", machine: "SAMARPAN-02", readingsCount: 32, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "32ab567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef12" },
-  { id: "SAMARPAN-03-H1", machine: "SAMARPAN-03", readingsCount: 28, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "21ef4567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef1" },
-  { id: "SAMARPAN-03-H2", machine: "SAMARPAN-03", readingsCount: 28, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "10de34567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef" },
-  { id: "ATOMIC-01-H1", machine: "ATOMIC-01", readingsCount: 30, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "09cd234567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcde" },
-  { id: "ATOMIC-01-H2", machine: "ATOMIC-01", readingsCount: 30, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "98bc1234567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcd" },
-  { id: "ATOMIC-02-H1", machine: "ATOMIC-02", readingsCount: 26, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "87ab01234567890ab12cd34ef5678bc9012de34567890abcdef1234567890abc" },
-  { id: "ATOMIC-02-H2", machine: "ATOMIC-02", readingsCount: 26, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "76fa901234567890ab12cd34ef5678bc9012de34567890abcdef1234567890ab" },
+  { id: "SMP-01-H1", machine: "SMP-01", readingsCount: 35, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "65de89ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef123456" },
+  { id: "SMP-01-H2", machine: "SMP-01", readingsCount: 35, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "54cd7890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef1234" },
+  { id: "SMP-02-H1", machine: "SMP-02", readingsCount: 32, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "43bc67890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef123" },
+  { id: "SMP-02-H2", machine: "SMP-02", readingsCount: 32, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "32ab567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef12" },
+  { id: "SMP-03-H1", machine: "SMP-03", readingsCount: 28, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "21ef4567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef1" },
+  { id: "SMP-03-H2", machine: "SMP-03", readingsCount: 28, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "10de34567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcdef" },
+  { id: "ATM-01-H1", machine: "ATM-01", readingsCount: 30, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "09cd234567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcde" },
+  { id: "ATM-01-H2", machine: "ATM-01", readingsCount: 30, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "98bc1234567890ab12cd34ef5678bc9012de34567890abcdef1234567890abcd" },
 ];
 
 export const HashIntegrityPage: React.FC = () => {
@@ -25,7 +23,7 @@ export const HashIntegrityPage: React.FC = () => {
     setIsVerifying(true);
     setTimeout(() => {
       setIsVerifying(false);
-      alert("All 14 Machine Head Hash Chains recomputed from Genesis blocks. 100% cryptographic integrity confirmed.");
+      alert("All 12 Machine Head Hash Chains recomputed from Genesis blocks. 100% cryptographic integrity confirmed.");
     }, 1200);
   };
 
@@ -34,7 +32,7 @@ export const HashIntegrityPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-black text-slate-900 tracking-tight">Per-Head Cryptographic Hash Chain Monitor</h2>
-          <p className="text-xs text-slate-500">Continuous step-by-step verification of SHA-256 historical links across all 14 heads</p>
+          <p className="text-xs text-slate-500">Continuous step-by-step verification of SHA-256 historical links across all 12 heads</p>
         </div>
         <button
           onClick={handleVerifyAll}
@@ -42,7 +40,7 @@ export const HashIntegrityPage: React.FC = () => {
           className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isVerifying ? "animate-spin" : ""}`} />
-          <span>{isVerifying ? "Verifying..." : "Re-Verify All 14 Chains"}</span>
+          <span>{isVerifying ? "Verifying..." : "Re-Verify All 12 Chains"}</span>
         </button>
       </div>
 
@@ -86,4 +84,3 @@ export const HashIntegrityPage: React.FC = () => {
     </div>
   );
 };
-

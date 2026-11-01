@@ -31,7 +31,8 @@ def test_backup_creation_and_integrity_verification():
 
 
 def test_shift_handover_reconciliation():
-    # Insert a dummy handover
+    # Clean up any previous test artifact
+    shift_handovers_store.delete("ho-test-1")
     handover_doc = {
         "id": "ho-test-1",
         "shift_id": "shift-1",
@@ -57,6 +58,8 @@ def test_shift_handover_reconciliation():
 
 
 def test_downtime_logging():
+    # Clean up any previous test artifact
+    downtime_store.delete("dt-test-1")
     downtime_doc = {
         "id": "dt-test-1",
         "machine_id": "SMP-01",
@@ -74,3 +77,4 @@ def test_downtime_logging():
     fetched = downtime_store.get_by_id("dt-test-1")
     assert fetched is not None
     assert fetched["duration_minutes"] == 8
+

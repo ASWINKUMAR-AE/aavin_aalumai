@@ -63,9 +63,9 @@
     "qr_identifier": "AAVIN://MADURAI/DAIRY/SMP-01/HEAD_1",
     "rated_speed_per_hour": 2500,
     "genesis_hash": "ea2246a5a1ffdf907ec3421c3d7de8c8d3edb0d09f22c1ee3c50ae66276db153",
-    "current_hash": "a028ae6a730899da5d3c964bafc0856aa97252f9018fd1cbd07fff94e8c4cea4",
+    "current_hash": "d83b19cff33fdb0238b84787bd6e15eaad5e341989fb8d320a195dbe64cb234a",
     "latest_counter": 229910,
-    "latest_reading_time": "2026-11-01T10:33:00.211403+00:00",
+    "latest_reading_time": "2026-11-01T12:28:15.428523+00:00",
     "is_active": true,
     "created_at": "2026-11-01T10:08:27.642902+00:00"
   },
@@ -77,9 +77,9 @@
     "qr_identifier": "AAVIN://MADURAI/DAIRY/SMP-01/HEAD_2",
     "rated_speed_per_hour": 2500,
     "genesis_hash": "f60cd425891a5f613ee13343604adf8782ab737898f76291ce414ae6058b3429",
-    "current_hash": "d8566b8a8894bfc4143afc04bddba22db35e60086e39a24d5bf11f5f64bfc039",
+    "current_hash": "5906e588ca6397b4e2b0ad96e3efbffd68e030adc34721302dc19f1219553e3c",
     "latest_counter": 376761,
-    "latest_reading_time": "2026-11-01T10:33:00.280263+00:00",
+    "latest_reading_time": "2026-11-01T12:28:15.553612+00:00",
     "is_active": true,
     "created_at": "2026-11-01T10:08:27.642902+00:00"
   },
