@@ -11,6 +11,7 @@ import {
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "../../services/api";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DEMO_ANOMALIES = [
   {
@@ -36,6 +37,7 @@ const DEMO_ANOMALIES = [
 ];
 
 export default function SupervisorAnomaliesScreen() {
+  const insets = useSafeAreaInsets();
   const [anomalies, setAnomalies] = useState(DEMO_ANOMALIES);
   const [selectedAnomaly, setSelectedAnomaly] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
@@ -63,7 +65,7 @@ export default function SupervisorAnomaliesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <Text style={styles.topBarTitle}>Plant Production Anomalies</Text>
       </View>
 

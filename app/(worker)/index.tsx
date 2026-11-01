@@ -156,6 +156,14 @@ export default function WorkerHomeScreen() {
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={styles.secondaryActionBtn}
+            onPress={() => router.push("/(worker)/qr-management")}
+          >
+            <Ionicons name="qr-code-outline" size={20} color={Colors.primary} />
+            <Text style={styles.secondaryActionText}>Manage QRs</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryActionBtn}
             onPress={() => router.push("/(worker)/reset-request")}
           >
             <Ionicons name="refresh-circle-outline" size={20} color={Colors.secondary} />
@@ -167,7 +175,7 @@ export default function WorkerHomeScreen() {
             onPress={() => router.push("/(worker)/wastage")}
           >
             <Ionicons name="trash-outline" size={20} color={Colors.error} />
-            <Text style={styles.secondaryActionText}>Record Wastage</Text>
+            <Text style={styles.secondaryActionText}>Wastage</Text>
           </TouchableOpacity>
         </View>
 

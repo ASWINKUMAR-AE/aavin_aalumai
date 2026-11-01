@@ -15,10 +15,31 @@ class Machine(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     machine_type: Mapped[str] = mapped_column(String(50), nullable=False) # RMC, Samarpan, Atomic Engineers
     total_heads: Mapped[int] = mapped_column(Integer, default=2)
+    qr_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=True) # e.g. QR-001
+    qr_version: Mapped[int] = mapped_column(Integer, default=1)
+    qr_payload: Mapped[str] = mapped_column(Text, nullable=True)
+    qr_status: Mapped[str] = mapped_column(String(20), default="active") # active, regenerated, suspended
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     heads: Mapped[list["Head"]] = relationship("Head", back_populates="machine", cascade="all, delete-orphan")
+    qr_history: Mapped[list["MachineQRHistory"]] = relationship("MachineQRHistory", back_populates="machine", cascade="all, delete-orphan")
+
+class MachineQRHistory(Base):
+    __tablename__ = "machine_qr_history"
+    
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    machine_id: Mapped[str] = mapped_column(String(36), ForeignKey("machines.id"), nullable=False)
+    qr_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload: Mapped[str] = mapped_column(Text, nullable=False)
+    reason: Mapped[str] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    invalidated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    
+    machine: Mapped["Machine"] = relationship("Machine", back_populates="qr_history")
 
 class Head(Base):
     __tablename__ = "heads"

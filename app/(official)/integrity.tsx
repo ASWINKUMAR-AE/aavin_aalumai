@@ -11,6 +11,7 @@ import {
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "../../services/api";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const HEAD_CHAINS = [
   { id: "RMC-01-H1", machine: "RMC-01", verifiedCount: 42, isValid: true, latestHash: "54ca113b8dbc9d99f018eac3528b9d21..." },
@@ -30,6 +31,7 @@ const HEAD_CHAINS = [
 ];
 
 export default function OfficialIntegrityScreen() {
+  const insets = useSafeAreaInsets();
   const [chains, setChains] = useState(HEAD_CHAINS);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -46,7 +48,7 @@ export default function OfficialIntegrityScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <Text style={styles.topBarTitle}>Hash Chain Integrity Monitor</Text>
       </View>
 

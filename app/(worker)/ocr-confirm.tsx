@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "../../services/api";
 import { OfflineQueueService } from "../../services/offlineQueue";
+import { checkOcrHealth, processHmiCounterImage, OCR_BASE_URL } from "../../services/ocrService";
 
 const VARIANTS = [
   { id: "TM-500", name: "Aavin Toned Milk (Blue)", volume: "500 ml" },
@@ -25,32 +27,77 @@ const VARIANTS = [
 
 export default function OcrConfirmScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
 
-  const ocrValue = Number(params.detectedOcr || 845515);
+  const initialOcr = Number(params.detectedOcr || 845515);
   const lastCount = Number(params.lastCount || 845230);
-  const confidence = Number(params.ocrConfidence || 0.984);
+  const photoUri = (params.photoUri as string) || "";
 
-  const [isCorrecting, setIsCorrecting] = useState(false);
-  const [confirmedValue, setConfirmedValue] = useState(String(ocrValue));
-  const [correctionReason, setCorrectionReason] = useState("");
-  const [selectedVariant, setSelectedVariant] = useState(params.variantId || "TM-500");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ocrValue, setOcrValue] = useState<number>(initialOcr);
+  const [confirmedValue, setConfirmedValue] = useState<string>(String(initialOcr));
+  const [confidence, setConfidence] = useState<number>(Number(params.ocrConfidence || 0.985));
+  const [processingTime, setProcessingTime] = useState<number>(3.6);
+  const [rawOcrText, setRawOcrText] = useState<string>(String(initialOcr));
+  const [isOcrProcessing, setIsOcrProcessing] = useState<boolean>(false);
+  const [showRawText, setShowRawText] = useState<boolean>(false);
+
+  const [isCorrecting, setIsCorrecting] = useState<boolean>(false);
+  const [correctionReason, setCorrectionReason] = useState<string>("");
+  const [selectedVariant, setSelectedVariant] = useState<string>(String(params.variantId || "TM-500"));
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedReceipt, setSubmittedReceipt] = useState<any>(null);
 
   const currentCountNum = parseInt(confirmedValue, 10) || 0;
   const delta = currentCountNum - lastCount;
 
+  // Run ZetHub OCR on mount if image available
+  useEffect(() => {
+    if (photoUri) {
+      runZetHubOcr(photoUri);
+    }
+  }, [photoUri]);
+
+  const runZetHubOcr = async (uri: string) => {
+    setIsOcrProcessing(true);
+    try {
+      const result = await processHmiCounterImage(uri, lastCount);
+      if (result.detectedCounter !== null) {
+        setOcrValue(result.detectedCounter);
+        setConfirmedValue(String(result.detectedCounter));
+      }
+      setConfidence(result.confidence);
+      setProcessingTime(result.processingTimeSeconds);
+      setRawOcrText(result.rawOcrText);
+    } catch {
+      // Keep initial
+    } finally {
+      setIsOcrProcessing(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (isCorrecting && !correctionReason.trim()) {
-      Alert.alert("Reason Required", "Please enter a reason for manually correcting the OCR reading.");
+      Alert.alert("Reason Required", "Please enter a mandatory reason for correcting the OCR counter reading.");
+      return;
+    }
+
+    if (delta < 0 && lastCount < 950000) {
+      Alert.alert(
+        "Counter Decrease Detected",
+        "The entered counter is lower than the previous reading. A negative delta requires the witnessed reset protocol.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Go to Reset Request", onPress: () => router.push("/(worker)/reset-request") }
+        ]
+      );
       return;
     }
 
     setIsSubmitting(true);
     const nowIso = new Date().toISOString();
-    const idempotencyKey = `reading_${params.headId}_${Date.now()}`;
-    const dummyPhotoBase64 = "U2FtcGxlIEFhdmluIFBIb3RvIEV2aWRlbmNlIEJ5dGVz"; // Base64 placeholder
+    const idempotencyKey = `reading_${params.headId || "HEAD"}_${Date.now()}`;
+    const dummyPhotoBase64 = "U2FtcGxlIEFhdmluIFBIb3RvIEV2aWRlbmNlIEJ5dGVz";
 
     const payload = {
       machine_id: String(params.machineId || "RMC-01"),
@@ -60,6 +107,8 @@ export default function OcrConfirmScreen() {
       ocr_value: ocrValue,
       confirmed_value: currentCountNum,
       ocr_confidence: confidence,
+      confirmation_mismatch: isCorrecting,
+      mismatch_reason: isCorrecting ? correctionReason : undefined,
       device_time: nowIso,
       device_monotonic_ms: Date.now() % 100000000,
       device_boot_id: "boot_aavin_android_01",
@@ -113,7 +162,7 @@ export default function OcrConfirmScreen() {
 
   if (submittedReceipt) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]}>
         <View style={styles.successCard}>
           <View style={styles.checkIconBox}>
             <Ionicons name="checkmark-done" size={48} color="#FFF" />
@@ -130,12 +179,12 @@ export default function OcrConfirmScreen() {
           <View style={styles.receiptDetails}>
             <View style={styles.receiptRow}>
               <Text style={styles.receiptLabel}>Head Identifier</Text>
-              <Text style={styles.receiptVal}>{params.headId}</Text>
+              <Text style={styles.receiptVal}>{params.headId || "RMC-01-H1"}</Text>
             </View>
             <View style={styles.receiptRow}>
               <Text style={styles.receiptLabel}>Confirmed Counter</Text>
               <Text style={[styles.receiptVal, { color: Colors.primary }]}>
-                {submittedReceipt.count.toLocaleString()}
+                {submittedReceipt.count.toLocaleString()} packets
               </Text>
             </View>
             <View style={styles.receiptRow}>
@@ -164,42 +213,85 @@ export default function OcrConfirmScreen() {
   return (
     <View style={styles.container}>
       {/* Top Header */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Counter Verification</Text>
-        <View style={{ width: 24 }} />
+        <TouchableOpacity
+          onPress={() => router.replace("/(worker)/scan")}
+          style={styles.backBtn}
+        >
+          <Ionicons name="camera-reverse-outline" size={20} color={Colors.primary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 24, 40) }]}>
         {/* Machine & Head info banner */}
         <View style={styles.headBanner}>
           <View>
-            <Text style={styles.headBannerCode}>{params.headId}</Text>
-            <Text style={styles.headBannerName}>{params.machineName}</Text>
+            <Text style={styles.headBannerCode}>
+              {params.machineId || "RMC-01"} • Head {params.headNumber || 1}
+            </Text>
+            <Text style={styles.headBannerName}>{params.machineName || "RMC VFFS Machine 1"}</Text>
           </View>
           <View style={styles.headBannerPos}>
-            <Text style={styles.headBannerPosText}>Head {params.headNumber}</Text>
+            <Text style={styles.headBannerPosText}>{params.headId || "RMC-01-H1"}</Text>
           </View>
         </View>
 
-        {/* OCR Result Card */}
+        {/* ZetHub OCR Engine Status Pill */}
+        <View style={styles.ocrEnginePill}>
+          <Ionicons name="hardware-chip" size={14} color="#0284C7" />
+          <Text style={styles.ocrEngineText}>
+            ZetHub OCR Service • Model: PaddleOCR PP-OCRv5 • Time: {processingTime.toFixed(1)}s
+          </Text>
+        </View>
+
+        {/* OCR Result Card with High-Contrast Typography */}
         <View style={styles.ocrCard}>
-          <Text style={styles.ocrCardLabel}>DETECTED COUNTER DISPLAY</Text>
-          <View style={styles.ocrResultBox}>
-            <Text style={styles.ocrResultDigits}>{ocrValue.toLocaleString()}</Text>
-            <Text style={styles.ocrResultUnit}>PACKETS</Text>
-          </View>
+          <Text style={styles.ocrCardLabel}>DETECTED COUNTER DISPLAY (PLC / HMI)</Text>
+
+          {isOcrProcessing ? (
+            <View style={{ paddingVertical: 20, alignItems: "center" }}>
+              <ActivityIndicator size="large" color="#FACC15" />
+              <Text style={{ color: "#E2E8F0", marginTop: 8, fontSize: 12 }}>
+                Running ZetHub PaddleOCR detection...
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.ocrResultBox}>
+              <Text style={styles.ocrResultDigits}>{ocrValue.toLocaleString()}</Text>
+              <Text style={styles.ocrResultUnit}>PACKETS</Text>
+            </View>
+          )}
+
           <View style={styles.confidenceRow}>
             <Ionicons name="sparkles" size={14} color={Colors.accent} />
             <Text style={styles.confidenceText}>
-              OCR Confidence: {(confidence * 100).toFixed(1)}% (ML Kit Precision)
+              Model Confidence: {(confidence * 100).toFixed(1)}% (Calibrated Region)
             </Text>
           </View>
+
+          {/* Toggle raw OCR text */}
+          <TouchableOpacity
+            style={styles.rawTextToggle}
+            onPress={() => setShowRawText(!showRawText)}
+          >
+            <Text style={styles.rawTextToggleText}>
+              {showRawText ? "Hide Raw OCR Text" : "View Raw OCR Output"}
+            </Text>
+            <Ionicons name={showRawText ? "chevron-up" : "chevron-down"} size={14} color="#94A3B8" />
+          </TouchableOpacity>
+
+          {showRawText && (
+            <View style={styles.rawTextBox}>
+              <Text style={styles.rawTextContent}>{rawOcrText}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Decision Toggle: Confirm vs Correct */}
+        {/* Decision Toggle: Confirm vs Correct vs Retake */}
         <View style={styles.decisionRow}>
           <TouchableOpacity
             style={[styles.decisionBtn, !isCorrecting && styles.decisionBtnActive]}
@@ -213,9 +305,7 @@ export default function OcrConfirmScreen() {
               size={18}
               color={!isCorrecting ? "#FFF" : Colors.textSecondary}
             />
-            <Text
-              style={[styles.decisionBtnText, !isCorrecting && styles.decisionBtnTextActive]}
-            >
+            <Text style={[styles.decisionBtnText, !isCorrecting && styles.decisionBtnTextActive]}>
               CONFIRM OCR
             </Text>
           </TouchableOpacity>
@@ -229,13 +319,21 @@ export default function OcrConfirmScreen() {
               size={18}
               color={isCorrecting ? "#FFF" : Colors.textSecondary}
             />
-            <Text
-              style={[styles.decisionBtnText, isCorrecting && styles.decisionBtnTextActive]}
-            >
+            <Text style={[styles.decisionBtnText, isCorrecting && styles.decisionBtnTextActive]}>
               CORRECT VALUE
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Retake Photo Button */}
+        <TouchableOpacity
+          style={styles.retakeBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="camera-reverse-outline" size={16} color={Colors.secondary} style={{ marginRight: 6 }} />
+          <Text style={styles.retakeBtnText}>RETAKE HMI PHOTOGRAPH</Text>
+        </TouchableOpacity>
 
         {/* Manual Correction Box */}
         {isCorrecting && (
@@ -247,15 +345,15 @@ export default function OcrConfirmScreen() {
               value={confirmedValue}
               onChangeText={setConfirmedValue}
             />
-            <Text style={styles.correctionLabel}>Reason for Correction:</Text>
+            <Text style={styles.correctionLabel}>Reason for Correction (Mandatory):</Text>
             <TextInput
               style={styles.reasonInput}
-              placeholder="e.g., Digit 4 was partially covered by glare"
+              placeholder="e.g., Digit was partially occluded by glare"
               value={correctionReason}
               onChangeText={setCorrectionReason}
             />
             <Text style={styles.correctionWarning}>
-              Note: Both original OCR output and confirmed value are permanently preserved in the audit chain.
+              Audit Notice: Both original OCR output ({ocrValue}) and confirmed value ({confirmedValue}) are permanently recorded in the ledger with reason.
             </Text>
           </View>
         )}
@@ -285,7 +383,7 @@ export default function OcrConfirmScreen() {
         </View>
 
         {/* Mandatory Variant Selection */}
-        <Text style={styles.variantSectionTitle}>Mandatory Variant Selection:</Text>
+        <Text style={styles.variantSectionTitle}>Mandatory Milk Variant Selection:</Text>
         <View style={styles.variantList}>
           {VARIANTS.map((v) => (
             <TouchableOpacity
@@ -328,7 +426,7 @@ export default function OcrConfirmScreen() {
           ) : (
             <>
               <Ionicons name="cloud-upload" size={20} color="#FFF" style={{ marginRight: 8 }} />
-              <Text style={styles.submitBtnText}>COMMIT READING TO LEDGER</Text>
+              <Text style={styles.submitBtnText}>COMMIT READING & EVIDENCE</Text>
             </>
           )}
         </TouchableOpacity>
@@ -347,7 +445,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 44,
     paddingBottom: 14,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
@@ -363,7 +460,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
   },
   headBanner: {
     flexDirection: "row",
@@ -374,7 +470,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   headBannerCode: {
     fontSize: 16,
@@ -397,31 +493,48 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: Colors.primary,
   },
+  ocrEnginePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F9FF",
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    marginBottom: 12,
+  },
+  ocrEngineText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0369A1",
+  },
   ocrCard: {
     backgroundColor: "#0A192F",
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 14,
     borderWidth: 1.5,
     borderColor: "#1E3A8A",
   },
   ocrCardLabel: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#93C5FD",
+    color: "#38BDF8",
     letterSpacing: 1,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   ocrResultBox: {
     flexDirection: "row",
     alignItems: "baseline",
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   ocrResultDigits: {
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    fontSize: 44,
+    fontSize: 48,
     fontWeight: "900",
     color: "#FACC15",
     letterSpacing: 1,
@@ -435,28 +548,54 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginBottom: 8,
   },
   confidenceText: {
     color: "#E2E8F0",
     fontSize: 12,
     fontWeight: "600",
   },
+  rawTextToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    paddingVertical: 4,
+  },
+  rawTextToggleText: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  rawTextBox: {
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 8,
+    width: "100%",
+  },
+  rawTextContent: {
+    color: "#E2E8F0",
+    fontFamily: "monospace",
+    fontSize: 10,
+    lineHeight: 14,
+  },
   decisionRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   decisionBtn: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    height: 46,
+    borderRadius: 10,
     backgroundColor: Colors.surface,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
   },
   decisionBtnActive: {
     backgroundColor: Colors.primary,
@@ -466,56 +605,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     color: Colors.textSecondary,
+    letterSpacing: 0.5,
   },
   decisionBtnTextActive: {
     color: "#FFFFFF",
   },
+  retakeBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: Colors.primaryLight,
+    marginBottom: 14,
+  },
+  retakeBtnText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: Colors.secondary,
+  },
   correctionCard: {
     backgroundColor: Colors.surface,
-    padding: 16,
     borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 16,
+    borderColor: Colors.warning,
+    marginBottom: 14,
   },
   correctionLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: Colors.textSecondary,
+    color: Colors.text,
     marginBottom: 6,
   },
   correctionInput: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.borderLight,
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 12,
+    height: 48,
     fontSize: 20,
-    fontWeight: "900",
+    fontWeight: "800",
     color: Colors.primary,
     marginBottom: 12,
-    backgroundColor: Colors.surface,
   },
   reasonInput: {
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.borderLight,
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 12,
+    height: 44,
     fontSize: 13,
     color: Colors.text,
     marginBottom: 8,
   },
   correctionWarning: {
     fontSize: 11,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     fontStyle: "italic",
+    lineHeight: 16,
   },
   deltaBox: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: Colors.surface,
-    padding: 14,
     borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 16,
@@ -524,13 +678,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deltaLabel: {
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 11,
     color: Colors.textSecondary,
+    fontWeight: "600",
   },
   deltaVal: {
-    fontSize: 14,
-    fontWeight: "900",
+    fontSize: 15,
+    fontWeight: "800",
     color: Colors.text,
     marginTop: 2,
   },
@@ -541,8 +695,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   variantList: {
-    gap: 8,
     marginBottom: 20,
+    gap: 8,
   },
   variantCard: {
     flexDirection: "row",
@@ -582,7 +736,8 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   variantNameActive: {
-    color: Colors.primary,
+    color: Colors.secondary,
+    fontWeight: "800",
   },
   variantSub: {
     fontSize: 11,
@@ -591,7 +746,7 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 14,
+    borderRadius: 12,
     height: 52,
     flexDirection: "row",
     justifyContent: "center",
@@ -600,17 +755,16 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "900",
+    fontSize: 14,
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   successCard: {
-    margin: 20,
-    marginTop: 60,
     backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 24,
     alignItems: "center",
+    margin: 16,
     elevation: 4,
   },
   checkIconBox: {
@@ -620,12 +774,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 18,
+    marginBottom: 16,
   },
   successTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: Colors.text,
+    color: Colors.secondary,
     textAlign: "center",
     marginBottom: 6,
   },
@@ -638,9 +792,9 @@ const styles = StyleSheet.create({
   receiptDetails: {
     width: "100%",
     backgroundColor: Colors.borderLight,
-    padding: 14,
     borderRadius: 12,
-    marginBottom: 24,
+    padding: 14,
+    marginBottom: 20,
     gap: 10,
   },
   receiptRow: {
@@ -660,22 +814,21 @@ const styles = StyleSheet.create({
   receiptHash: {
     fontSize: 11,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-    color: Colors.primary,
+    color: Colors.secondary,
     fontWeight: "700",
   },
   doneBtn: {
-    backgroundColor: Colors.secondary,
     width: "100%",
-    height: 50,
-    borderRadius: 12,
+    height: 48,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
   doneBtnText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0.5,
   },
 });
-

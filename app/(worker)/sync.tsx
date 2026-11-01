@@ -8,11 +8,13 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { OfflineQueueService, QueuedReading } from "../../services/offlineQueue";
 
 export default function OfflineSyncScreen() {
+  const insets = useSafeAreaInsets();
   const [queue, setQueue] = useState<QueuedReading[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -43,7 +45,7 @@ export default function OfflineSyncScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <Text style={styles.topBarTitle}>Offline Queue & Sync</Text>
         <TouchableOpacity onPress={loadQueue} style={styles.refreshBtn}>
           <Ionicons name="refresh" size={20} color={Colors.primary} />

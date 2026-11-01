@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "../../services/api";
@@ -29,6 +30,7 @@ const DEMO_RESETS = [
 ];
 
 export default function SupervisorResetsScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [resets, setResets] = useState(DEMO_RESETS);
   const [isProcessing, setIsProcessing] = useState(false);

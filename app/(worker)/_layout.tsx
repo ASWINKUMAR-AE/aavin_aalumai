@@ -1,9 +1,12 @@
 import React from "react";
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function WorkerLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -13,8 +16,8 @@ export default function WorkerLayout() {
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + (insets.bottom > 0 ? insets.bottom - 4 : 0),
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -68,7 +71,19 @@ export default function WorkerLayout() {
           ),
         }}
       />
-      {/* Hidden screens from bottom tabs */}
+      {/* Hidden navigation routes */}
+      <Tabs.Screen
+        name="machine-details"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="qr-management"
+        options={{
+          href: null,
+        }}
+      />
       <Tabs.Screen
         name="capture"
         options={{
@@ -90,4 +105,5 @@ export default function WorkerLayout() {
     </Tabs>
   );
 }
+
 

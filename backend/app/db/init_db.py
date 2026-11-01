@@ -75,52 +75,70 @@ def init_db():
                 db.add(v)
         db.commit()
 
-        # 4. Seed Machines & 14 Heads (Section 3 Requirement)
-        # RMC: 2 machines (4 heads)
-        # Samarpan: 3 machines (6 heads)
-        # Atomic Engineers: 2 machines (4 heads)
-        machines_data = [
-            ("RMC-01", "RMC VFFS Machine 1", "RMC", 2),
-            ("RMC-02", "RMC VFFS Machine 2", "RMC", 2),
-            ("SAMARPAN-01", "Samarpan Integrus 1", "Samarpan", 2),
-            ("SAMARPAN-02", "Samarpan Integrus 2", "Samarpan", 2),
-            ("SAMARPAN-03", "Samarpan Integrus 3", "Samarpan", 2),
-            ("ATOMIC-01", "Atomic Engineers Pouch Pack 1", "Atomic Engineers", 2),
-            ("ATOMIC-02", "Atomic Engineers Pouch Pack 2", "Atomic Engineers", 2),
-        ]
+        # 4. Seed the 6 Primary Machines & 12 Heads (Six Machine Configuration)
+        # QR-001: RMC-01 (RMC, 2 heads)
+        # QR-002: RMC-02 (RMC, 2 heads)
+        # QR-003: SMP-01 (Samarpan, 2 heads)
+        # QR-004: SMP-02 (Samarpan, 2 heads)
+        # QR-005: SMP-03 (Samarpan, 2 heads)
+        # QR-006: ATM-01 (Atomic Engineers, 2 heads)
+        from app.services.qr_service import PRIMARY_MACHINES_CONFIG, build_qr_payload
 
         now_utc = datetime.now(timezone.utc)
 
-        for m_code, m_name, m_type, heads_count in machines_data:
+        for cfg in PRIMARY_MACHINES_CONFIG:
+            m_code = cfg["machine_id"]
+            m_name = cfg["machine_name"]
+            m_type = cfg["machine_type"]
+            qr_id = cfg["qr_id"]
+            heads_count = cfg["heads"]
+            payload = build_qr_payload(m_code, qr_id, 1)
+
             machine = db.query(Machine).filter(Machine.machine_code == m_code).first()
+            if not machine:
+                # Also check legacy alias
+                legacy_code = "SAMARPAN" + m_code[3:] if m_code.startswith("SMP") else ("ATOMIC" + m_code[3:] if m_code.startswith("ATM") else None)
+                if legacy_code:
+                    machine = db.query(Machine).filter(Machine.machine_code == legacy_code).first()
+                    if machine:
+                        machine.machine_code = m_code
+                
             if not machine:
                 machine = Machine(
                     machine_code=m_code,
                     name=m_name,
                     machine_type=m_type,
                     total_heads=heads_count,
+                    qr_id=qr_id,
+                    qr_version=1,
+                    qr_payload=payload,
+                    qr_status="active",
                     is_active=True
                 )
                 db.add(machine)
                 db.flush()
+            else:
+                machine.qr_id = qr_id
+                machine.qr_payload = payload
+                machine.qr_status = "active"
 
-            # Create Heads for this machine
+            # Create 2 Heads for this machine
             for h_num in range(1, heads_count + 1):
                 h_code = f"{m_code}-H{h_num}"
-                qr_id = f"AAVIN://MADURAI/DAIRY/{m_code}/HEAD_{h_num}"
+                head_qr = f"AAVIN://MADURAI/DAIRY/{m_code}/HEAD_{h_num}"
                 
                 head = db.query(Head).filter(Head.head_code == h_code).first()
                 if not head:
                     genesis_hash = HashChainService.create_genesis_hash(
                         head_code=h_code,
-                        qr_identifier=qr_id,
+                        qr_identifier=head_qr,
                         created_at=now_utc
                     )
                     head = Head(
                         machine_id=machine.id,
                         head_code=h_code,
                         head_number=h_num,
-                        qr_identifier=qr_id,
+                        qr_identifier=head_qr,
                         rated_speed_per_hour=2500,
                         genesis_hash=genesis_hash,
                         current_hash=genesis_hash,

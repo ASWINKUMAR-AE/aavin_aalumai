@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const EVIDENCE_RECORDS = [
   {
@@ -46,11 +47,12 @@ const EVIDENCE_RECORDS = [
 ];
 
 export default function OfficialEvidenceViewerScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedRecord, setSelectedRecord] = useState(EVIDENCE_RECORDS[0]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <Text style={styles.topBarTitle}>Tamper-Evident Evidence Viewer</Text>
       </View>
 

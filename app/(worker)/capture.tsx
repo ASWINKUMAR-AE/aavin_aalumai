@@ -7,12 +7,14 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function CameraCaptureScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const [torch, setTorch] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -44,7 +46,7 @@ export default function CameraCaptureScreen() {
   return (
     <View style={styles.container}>
       {/* Top Controls */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 14) }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
           <Ionicons name="close" size={24} color="#FFF" />
         </TouchableOpacity>
@@ -95,7 +97,7 @@ export default function CameraCaptureScreen() {
       </View>
 
       {/* Bottom Shutter Action */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom + 8, 24) }]}>
         <View style={styles.noGalleryPill}>
           <Ionicons name="lock-closed" size={12} color="rgba(255,255,255,0.7)" />
           <Text style={styles.noGalleryText}>In-App Camera Evidence Only (Gallery Blocked)</Text>

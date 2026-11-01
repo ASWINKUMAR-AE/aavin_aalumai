@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "../../services/api";
@@ -54,6 +55,7 @@ const DEMO_READINGS = [
 ];
 
 export default function MyReadingsScreen() {
+  const insets = useSafeAreaInsets();
   const [readings, setReadings] = useState(DEMO_READINGS);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -80,7 +82,7 @@ export default function MyReadingsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <Text style={styles.topBarTitle}>My Shift Readings</Text>
         <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
           <Ionicons name="refresh" size={20} color={Colors.primary} />

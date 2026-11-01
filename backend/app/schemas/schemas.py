@@ -58,10 +58,73 @@ class MachineResponse(BaseModel):
     machine_type: str
     total_heads: int
     is_active: bool
+    qr_id: Optional[str] = None
+    qr_version: Optional[int] = 1
+    qr_status: Optional[str] = "active"
+    qr_payload: Optional[str] = None
     heads: List[HeadResponse] = []
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class MachineCreate(BaseModel):
+    machine_code: str
+    name: str
+    machine_type: str
+    total_heads: int = 2
+    qr_id: Optional[str] = None
+
+class MachineUpdate(BaseModel):
+    name: Optional[str] = None
+    machine_code: Optional[str] = None
+    machine_type: Optional[str] = None
+    total_heads: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class HeadUpdate(BaseModel):
+    rated_speed_per_hour: Optional[int] = None
+    is_active: Optional[bool] = None
+    head_number: Optional[int] = None
+
+class MachineQRResponse(BaseModel):
+    machine_id: str
+    machine_code: str
+    machine_name: str
+    machine_type: str
+    qr_id: str
+    qr_version: int
+    qr_status: str
+    qr_payload: str
+    head_count: int
+    image_url: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class QRValidateRequest(BaseModel):
+    qr_text: str
+
+class QRValidateResponse(BaseModel):
+    valid: bool
+    machine_id: Optional[str] = None
+    machine_code: Optional[str] = None
+    machine_name: Optional[str] = None
+    machine_type: Optional[str] = None
+    qr_id: Optional[str] = None
+    heads: List[HeadResponse] = []
+    error: Optional[str] = None
+
+class QRRegenerateRequest(BaseModel):
+    reason: str
+
+class QRRegenerateResponse(BaseModel):
+    success: bool
+    machine_id: str
+    qr_id: str
+    version: int
+    image_url: str
+    message: str
 
 class VariantResponse(BaseModel):
     id: str

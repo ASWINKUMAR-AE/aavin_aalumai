@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import { apiClient } from "../../services/api";
 
 export default function WastageEntryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [machineId, setMachineId] = useState("RMC-01");
   const [headId, setHeadId] = useState("RMC-01-H1");
   const [variantId, setVariantId] = useState("TM-500");
@@ -55,7 +57,7 @@ export default function WastageEntryScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>

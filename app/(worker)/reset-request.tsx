@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import { apiClient } from "../../services/api";
 
 export default function ResetRequestScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [selectedHead, setSelectedHead] = useState("RMC-01-H1");
   const [beforeCounter, setBeforeCounter] = useState("998500");
   const [afterCounter, setAfterCounter] = useState("1200");
@@ -59,7 +61,7 @@ export default function ResetRequestScreen() {
   return (
     <View style={styles.container}>
       {/* Top Bar */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
