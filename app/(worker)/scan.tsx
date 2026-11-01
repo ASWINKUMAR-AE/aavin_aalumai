@@ -44,7 +44,7 @@ export default function MachineQrScannerScreen() {
 
       if (res.data && res.data.valid) {
         router.push({
-          pathname: "/(worker)/machine-details",
+          pathname: "/(worker)/display-capture",
           params: {
             machineId: res.data.machine_code || res.data.machine_id,
             qrId: res.data.qr_id,
@@ -58,7 +58,7 @@ export default function MachineQrScannerScreen() {
     } catch (err: any) {
       // Local fallback navigation for offline floor use
       router.push({
-        pathname: "/(worker)/machine-details",
+        pathname: "/(worker)/display-capture",
         params: {
           machineId: selectedMachine.machineId,
           qrId: selectedMachine.qrId,

@@ -323,3 +323,101 @@ class DashboardSummaryResponse(BaseModel):
     critical_anomalies: int
     hash_chain_status: str
     latest_daily_anchor_hash: Optional[str]
+
+# Machine Display Evidence & Dual-Head Schemas
+class EvidenceUploadResponse(BaseModel):
+    evidence_id: str
+    evidence_uuid: str
+    machine_id: str
+    qr_id: Optional[str] = None
+    image_sha256: str
+    upload_status: str
+    file_size: int
+    server_received_at: datetime
+    image_url: str
+
+class HeadReadingInput(BaseModel):
+    head_number: int # 1 for Head A, 2 for Head B
+    head_id: Optional[str] = None
+    head_label: Optional[str] = None # "HEAD - A", "HEAD - B"
+    variant_id: Optional[str] = None
+    
+    # OCR values
+    production_ocr_value: Optional[int] = None
+    wastage_ocr_value: Optional[int] = None
+    variant_ocr_value: Optional[str] = None
+    machine_speed_ocr: Optional[int] = None
+    feed_time_ocr: Optional[str] = None
+    recipe_no_ocr: Optional[int] = None
+
+    # Worker confirmed values
+    production_confirmed_value: int
+    wastage_confirmed_value: Optional[int] = 0
+    variant_confirmed_value: Optional[str] = None
+
+    ocr_confidence: Optional[float] = 1.0
+    correction_status: Optional[str] = "original" # original, corrected
+    correction_reason: Optional[str] = None
+
+class MachineDisplayReadingSubmitRequest(BaseModel):
+    evidence_id: str
+    machine_id: str
+    qr_id: Optional[str] = None
+    shift_id: Optional[str] = None
+    device_id: Optional[str] = None
+    device_time: datetime
+    device_monotonic_ms: Optional[int] = 0
+    device_boot_id: Optional[str] = "unknown_boot"
+    idempotency_key: Optional[str] = None
+    raw_ocr_response: Optional[Dict[str, Any]] = None
+    head_readings: List[HeadReadingInput]
+
+class MachineReadingOCRResponse(BaseModel):
+    id: str
+    evidence_id: str
+    machine_id: str
+    head_id: Optional[str]
+    head_number: int
+    head_label: Optional[str]
+    production_ocr_value: Optional[int]
+    wastage_ocr_value: Optional[int]
+    variant_ocr_value: Optional[str]
+    machine_speed_ocr: Optional[int]
+    feed_time_ocr: Optional[str]
+    recipe_no_ocr: Optional[int]
+    production_confirmed_value: int
+    wastage_confirmed_value: Optional[int]
+    variant_confirmed_value: Optional[str]
+    ocr_confidence: float
+    correction_status: str
+    correction_reason: Optional[str]
+    reading_id: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class MachineDisplayEvidenceResponse(BaseModel):
+    id: str
+    evidence_uuid: str
+    machine_id: str
+    machine_code: Optional[str] = None
+    machine_name: Optional[str] = None
+    qr_id: Optional[str] = None
+    shift_id: Optional[str] = None
+    worker_id: str
+    worker_name: Optional[str] = None
+    mime_type: str
+    file_size: int
+    image_sha256: str
+    captured_at: datetime
+    server_received_at: datetime
+    upload_status: str
+    verification_status: str
+    image_url: str
+    head_readings: List[MachineReadingOCRResponse] = []
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

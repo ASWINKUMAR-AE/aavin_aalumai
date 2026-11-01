@@ -48,3 +48,13 @@ export const getHeads = async () => {
   }
 };
 
+export const getMachineDisplayEvidence = async (filters: any = {}) => {
+  try {
+    const res = await api.get("/machine-readings/evidence", { params: filters });
+    return res.data;
+  } catch {
+    return [];
+  }
+};
+
+

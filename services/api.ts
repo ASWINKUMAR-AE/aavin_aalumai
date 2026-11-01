@@ -10,6 +10,8 @@ const BASE_URL = Platform.select({
   default: "http://localhost:8000/api/v1",
 });
 
+export const API_BASE_URL = BASE_URL;
+
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: 8000,

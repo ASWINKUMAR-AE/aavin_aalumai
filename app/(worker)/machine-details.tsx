@@ -223,6 +223,29 @@ export default function MachineDetailsScreen() {
               <Text style={styles.editPillText}>EDIT MACHINE</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Primary Recommended Action: Capture Complete Dual-Head HMI Display */}
+          <TouchableOpacity
+            style={styles.primaryDisplayCaptureBtn}
+            onPress={() =>
+              router.push({
+                pathname: "/(worker)/display-capture",
+                params: {
+                  machineId: machine?.machine_code || machineId,
+                  machineName: machine?.name || "",
+                  machineType: machine?.machine_type || "",
+                  qrId: machine?.qr_id || "QR-001",
+                  shiftName: "Shift 1 (Morning)",
+                },
+              })
+            }
+            activeOpacity={0.85}
+          >
+            <Ionicons name="camera" size={20} color="#FFF" style={{ marginRight: 8 }} />
+            <Text style={styles.primaryDisplayCaptureText}>
+              CAPTURE COMPLETE HMI DISPLAY (HEAD A & B)
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Section Title */}
@@ -454,6 +477,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
     color: Colors.success,
+  },
+  primaryDisplayCaptureBtn: {
+    flexDirection: "row",
+    height: 48,
+    backgroundColor: Colors.secondary,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  primaryDisplayCaptureText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   editPill: {
     flexDirection: "row",

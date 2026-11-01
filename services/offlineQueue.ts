@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiClient } from "./api";
+import { EvidenceService, DualHeadSubmissionPayload } from "./evidenceService";
 
 export interface QueuedReading {
   idempotencyKey: string;
@@ -20,7 +21,20 @@ export interface QueuedReading {
   timestamp: number;
 }
 
+export interface QueuedDisplayEvidenceReading {
+  idempotencyKey: string;
+  photoUri: string;
+  machineId: string;
+  qrId?: string;
+  shiftId: string;
+  payload: DualHeadSubmissionPayload;
+  status: "pending" | "uploading" | "synced" | "rejected";
+  errorReason?: string;
+  timestamp: number;
+}
+
 const STORAGE_KEY = "@aavin_offline_readings_queue";
+const DISPLAY_STORAGE_KEY = "@aavin_offline_display_evidence_queue";
 
 export class OfflineQueueService {
   static async enqueueReading(reading: QueuedReading): Promise<void> {
@@ -36,6 +50,56 @@ export class OfflineQueueService {
     } catch {
       return [];
     }
+  }
+
+  static async enqueueDisplayEvidence(item: QueuedDisplayEvidenceReading): Promise<void> {
+    const queue = await this.getDisplayQueue();
+    queue.push(item);
+    await AsyncStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(queue));
+  }
+
+  static async getDisplayQueue(): Promise<QueuedDisplayEvidenceReading[]> {
+    try {
+      const data = await AsyncStorage.getItem(DISPLAY_STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  static async syncDisplayQueue(): Promise<{ synced: number; failed: number }> {
+    const queue = await this.getDisplayQueue();
+    let synced = 0;
+    let failed = 0;
+    const remaining: QueuedDisplayEvidenceReading[] = [];
+
+    for (const item of queue) {
+      if (item.status === "synced") continue;
+      try {
+        // If evidence not uploaded yet, upload first
+        if (!item.payload.evidence_id || item.payload.evidence_id.startsWith("local_")) {
+          const uploadRes = await EvidenceService.uploadDisplayEvidence(
+            item.photoUri,
+            item.machineId,
+            item.qrId,
+            item.shiftId,
+            item.idempotencyKey
+          );
+          item.payload.evidence_id = uploadRes.evidence_id;
+        }
+
+        await EvidenceService.submitDisplayReadings(item.payload);
+        synced++;
+      } catch (err: any) {
+        failed++;
+        item.status = "rejected";
+        item.errorReason = err.response?.data?.detail || err.message;
+        remaining.push(item);
+      }
+    }
+
+    await AsyncStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(remaining));
+    return { synced, failed };
   }
 
   static async syncPending(): Promise<{ synced: number; failed: number }> {
@@ -72,11 +136,19 @@ export class OfflineQueueService {
     }
 
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+
+    // Also sync display evidence queue
+    const displaySync = await this.syncDisplayQueue();
+    synced += displaySync.synced;
+    failed += displaySync.failed;
+
     return { synced, failed };
   }
 
   static async clearQueue(): Promise<void> {
     await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(DISPLAY_STORAGE_KEY);
   }
 }
+
 

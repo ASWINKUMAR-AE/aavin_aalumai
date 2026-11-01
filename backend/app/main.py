@@ -18,6 +18,7 @@ from app.api.v1.operations import router as operations_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.admin import router as admin_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.machine_readings import router as machine_readings_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,3 +71,4 @@ app.include_router(operations_router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
+app.include_router(machine_readings_router, prefix="/api/v1")

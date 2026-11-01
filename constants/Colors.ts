@@ -12,6 +12,7 @@ export const Colors = {
   border: "#E2E8F0",
   borderLight: "#F1F5F9",
   text: "#0F172A",
+  textPrimary: "#0F172A",
   textSecondary: "#475569",
   textMuted: "#94A3B8",
   textInverse: "#FFFFFF",
