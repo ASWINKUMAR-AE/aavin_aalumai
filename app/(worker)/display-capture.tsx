@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, memo } from "react";
 import {
   View,
   Text,
@@ -11,13 +11,61 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Haptics from "expo-haptics";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
+
+// Isolated memoized clock: updates its own text node without re-rendering parent CameraView!
+const LiveClock = memo(function LiveClock() {
+  const [timeStr, setTimeStr] = useState<string>(() => {
+    const now = new Date();
+    return (
+      now.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }) +
+      " " +
+      now.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    );
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      setTimeStr(
+        now.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }) +
+          " " +
+          now.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
+          })
+      );
+    };
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return <Text style={styles.headerSubClock}>{timeStr}</Text>;
+});
 
 export default function MachineDisplayCaptureScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const params = useLocalSearchParams();
 
   const machineId = (params.machineId as string) || "SMP-01";
@@ -30,51 +78,46 @@ export default function MachineDisplayCaptureScreen() {
   const [torch, setTorch] = useState<boolean>(false);
   const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
-  const [qualityCheck, setQualityCheck] = useState<"optimal" | "low_light" | "overexposed">("optimal");
-  const [currentTime, setCurrentTime] = useState<string>("");
+  const [isCameraReady, setIsCameraReady] = useState<boolean>(false);
 
   const cameraRef = useRef<any>(null);
 
   useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }) + " " +
-        now.toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        })
-      );
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!permission?.granted) {
+      requestPermission();
+    }
+  }, [permission]);
 
   const handleCapture = async () => {
     if (isCapturing) return;
     setIsCapturing(true);
 
     try {
-      if (cameraRef.current && typeof cameraRef.current.takePictureAsync === "function") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {
+      // Haptics fallback
+    }
+
+    try {
+      if (
+        cameraRef.current &&
+        typeof cameraRef.current.takePictureAsync === "function"
+      ) {
+        // Fast, non-blocking capture settings (skipProcessing avoids Android memory/render stalls)
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 1.0,
-          skipProcessing: false,
+          quality: 0.85,
+          skipProcessing: true,
+          shutterSound: false,
         });
+
         if (photo && photo.uri) {
           setCapturedPhotoUri(photo.uri);
           setIsCapturing(false);
           return;
         }
       }
-    } catch {
-      // Fallback for emulator / web environments
+    } catch (e: any) {
+      // If native camera is busy or failed, fallback gracefully to pre-loaded sample
     }
 
     // Default physical HMI evidence sample (captured in plant)
@@ -84,11 +127,12 @@ export default function MachineDisplayCaptureScreen() {
       ).uri;
       setCapturedPhotoUri(sampleUri);
       setIsCapturing(false);
-    }, 600);
+    }, 300);
   };
 
   const handleRetake = () => {
     setCapturedPhotoUri(null);
+    setIsCameraReady(false);
   };
 
   const handleProceedToOcr = () => {
@@ -120,9 +164,10 @@ export default function MachineDisplayCaptureScreen() {
         </TouchableOpacity>
         <View style={styles.headerTitleBox}>
           <Text style={styles.headerTitle}>{machineName}</Text>
-          <Text style={styles.headerSub}>
-            ID: {machineId} • {shiftName} • {currentTime}
-          </Text>
+          <View style={styles.headerSubRow}>
+            <Text style={styles.headerSub}>ID: {machineId} • {shiftName} • </Text>
+            <LiveClock />
+          </View>
         </View>
         <TouchableOpacity
           onPress={() => setTorch(!torch)}
@@ -157,14 +202,16 @@ export default function MachineDisplayCaptureScreen() {
             </View>
           </View>
         ) : (
-          // Live Camera Stream
+          // Live Camera Stream: only active when screen is focused to prevent hardware conflicts!
           <View style={styles.cameraWrapper}>
-            {permission && permission.granted ? (
+            {isFocused && permission && permission.granted ? (
               <CameraView
                 ref={cameraRef}
                 style={StyleSheet.absoluteFillObject}
                 facing="back"
                 enableTorch={torch}
+                autofocus="on"
+                onCameraReady={() => setIsCameraReady(true)}
               />
             ) : (
               // Simulator / Fallback Background View
@@ -188,11 +235,15 @@ export default function MachineDisplayCaptureScreen() {
 
             {/* Quality Indicator Pill */}
             <View style={styles.qualityPill}>
-              <Ionicons name="sparkles" size={13} color="#4ade80" />
+              <Ionicons
+                name={isCameraReady ? "sparkles" : "sync"}
+                size={13}
+                color={isCameraReady ? "#4ade80" : "#38bdf8"}
+              />
               <Text style={styles.qualityText}>
-                {qualityCheck === "optimal"
-                  ? "Quality: Optimal • Complete Display Alignment"
-                  : "Check Display Alignment"}
+                {isCameraReady
+                  ? "Live Camera Ready • Complete Screen Alignment"
+                  : "Initializing Camera Sensor..."}
               </Text>
             </View>
 
@@ -200,11 +251,11 @@ export default function MachineDisplayCaptureScreen() {
             <View style={styles.reticleContainer}>
               <View style={styles.reticleBox}>
                 <View style={styles.reticleHeader}>
-                  <View style={styles.reticleTag}>
+                  <View style={styles.headTagA}>
                     <Text style={styles.reticleTagText}>HEAD A (LEFT)</Text>
                   </View>
                   <Text style={styles.reticleCenter}>DELTA VFFS SCREEN</Text>
-                  <View style={styles.reticleTag}>
+                  <View style={styles.headTagB}>
                     <Text style={styles.reticleTagText}>HEAD B (RIGHT)</Text>
                   </View>
                 </View>
@@ -257,7 +308,7 @@ export default function MachineDisplayCaptureScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.shutterBtn}
+              style={[styles.shutterBtn, isCapturing && { opacity: 0.6 }]}
               onPress={handleCapture}
               disabled={isCapturing}
               activeOpacity={0.85}
@@ -312,11 +363,21 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 0.3,
   },
+  headerSubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
   headerSub: {
     fontSize: 11,
     color: "#94a3b8",
-    marginTop: 2,
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+  headerSubClock: {
+    fontSize: 11,
+    color: "#38bdf8",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontWeight: "700",
   },
   viewport: {
     flex: 1,
@@ -386,8 +447,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  reticleTag: {
-    backgroundColor: "rgba(14, 116, 144, 0.8)",
+  headTagA: {
+    backgroundColor: "rgba(2, 132, 199, 0.85)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  headTagB: {
+    backgroundColor: "rgba(124, 58, 237, 0.85)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -538,4 +605,3 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
-

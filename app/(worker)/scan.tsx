@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import { Colors } from "../../constants/Colors";
@@ -30,6 +31,7 @@ const PRIMARY_MACHINES = [
 export default function MachineQrScannerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState<boolean>(false);
   const [scanned, setScanned] = useState<boolean>(false);
@@ -147,7 +149,7 @@ export default function MachineQrScannerScreen() {
 
       {/* Camera Live Viewfinder Area */}
       <View style={styles.cameraBox}>
-        {permission && permission.granted ? (
+        {isFocused && permission && permission.granted ? (
           <CameraView
             style={StyleSheet.absoluteFillObject}
             facing="back"
