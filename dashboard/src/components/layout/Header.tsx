@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, Shield, Bell } from "lucide-react";
+import { Clock, Shield } from "lucide-react";
 
 export const Header: React.FC = () => {
   return (

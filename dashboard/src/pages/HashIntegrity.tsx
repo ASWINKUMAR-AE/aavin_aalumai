@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ShieldCheck, RefreshCw, AlertOctagon, CheckCircle } from "lucide-react";
+import { RefreshCw, CheckCircle } from "lucide-react";
 
 const HEAD_CHAINS = [
   { id: "RMC-01-H1", machine: "RMC-01", readingsCount: 42, genesis: "GENESIS_SEALED", status: "Verified", lastHash: "54ca113b8dbc9d99f018eac3528b9d21c784ee09b81239aa81f08e458760086c" },

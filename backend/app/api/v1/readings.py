@@ -1,11 +1,10 @@
 import base64
 from typing import List, Optional
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
-from app.db.session import get_db
+
 from app.core.permissions import get_current_user_payload, require_permission
-from app.models.reading import Reading, ReadingCorrection
-from app.models.integrity import IdempotencyRecord
+from app.storage.store import readings_stream, idempotency_store, audit_chain
 from app.schemas.schemas import ReadingSubmitRequest, ReadingResponse
 from app.services.reading_service import ReadingService
 
@@ -14,33 +13,28 @@ router = APIRouter(prefix="/readings", tags=["Readings"])
 @router.post("", response_model=ReadingResponse)
 def submit_reading(
     req: ReadingSubmitRequest,
-    db: Session = Depends(get_db),
     payload: dict = Depends(require_permission("reading.capture"))
 ):
     user_id = payload.get("sub")
     
     # 1. Idempotency Check
     if req.idempotency_key:
-        existing = db.query(IdempotencyRecord).filter(
-            IdempotencyRecord.idempotency_key == req.idempotency_key
-        ).first()
-        if existing:
-            # Return previously computed reading
-            cached_reading_id = existing.response_body.get("id")
-            cached = db.query(Reading).filter(Reading.id == cached_reading_id).first()
-            if cached:
-                return cached
+        cached = idempotency_store.get_by_id(req.idempotency_key)
+        if cached and cached.get("response_body"):
+            cached_id = cached["response_body"].get("id")
+            matches = readings_stream.read_stream(filter_func=lambda r: r.get("id") == cached_id)
+            if matches:
+                return ReadingResponse(**matches[0])
 
     # 2. Decode Photo Bytes
     try:
         photo_bytes = base64.b64decode(req.photo_base64)
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid photo_base64 data")
 
     # 3. Submit Reading via Service
     try:
         reading = ReadingService.submit_reading(
-            db=db,
             machine_id=req.machine_id,
             head_id=req.head_id,
             variant_id=req.variant_id,
@@ -63,16 +57,15 @@ def submit_reading(
 
     # 4. Save Idempotency Record
     if req.idempotency_key:
-        record = IdempotencyRecord(
-            idempotency_key=req.idempotency_key,
-            endpoint="/api/v1/readings",
-            response_code=200,
-            response_body={"id": reading.id, "hash": reading.hash}
-        )
-        db.add(record)
-        db.commit()
+        idempotency_store.upsert({
+            "idempotency_key": req.idempotency_key,
+            "endpoint": "/api/v1/readings",
+            "response_code": 200,
+            "response_body": {"id": reading.get("id"), "hash": reading.get("hash")},
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
 
-    return reading
+    return ReadingResponse(**reading)
 
 @router.get("", response_model=List[ReadingResponse])
 def list_readings(
@@ -80,43 +73,43 @@ def list_readings(
     head_id: Optional[str] = Query(None),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
     payload: dict = Depends(get_current_user_payload)
 ):
-    query = db.query(Reading)
-    if machine_id:
-        query = query.filter(Reading.machine_id == machine_id)
-    if head_id:
-        query = query.filter(Reading.head_id == head_id)
-        
-    readings = query.order_by(Reading.created_at.desc()).offset(offset).limit(limit).all()
-    return readings
+    filter_fn = None
+    if machine_id and head_id:
+        filter_fn = lambda r: (r.get("machine_id") == machine_id or r.get("machine_code") == machine_id) and (r.get("head_id") == head_id or r.get("head_code") == head_id)
+    elif machine_id:
+        filter_fn = lambda r: (r.get("machine_id") == machine_id or r.get("machine_code") == machine_id)
+    elif head_id:
+        filter_fn = lambda r: (r.get("head_id") == head_id or r.get("head_code") == head_id)
+
+    readings = readings_stream.read_stream(limit=limit, offset=offset, reverse=True, filter_func=filter_fn)
+    return [ReadingResponse(**r) for r in readings]
 
 @router.get("/{reading_id}", response_model=ReadingResponse)
-def get_reading(reading_id: str, db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
-    reading = db.query(Reading).filter(Reading.id == reading_id).first()
-    if not reading:
+def get_reading(reading_id: str, payload: dict = Depends(get_current_user_payload)):
+    matches = readings_stream.read_stream(filter_func=lambda r: r.get("id") == reading_id or r.get("reading_id") == reading_id)
+    if not matches:
         raise HTTPException(status_code=404, detail="Reading not found")
-    return reading
+    return ReadingResponse(**matches[0])
 
 @router.post("/{reading_id}/corrections")
 def request_reading_correction(
     reading_id: str,
     corrected_value: int,
     reason: str,
-    db: Session = Depends(get_db),
     payload: dict = Depends(require_permission("reading.correction.request"))
 ):
-    reading = db.query(Reading).filter(Reading.id == reading_id).first()
-    if not reading:
+    matches = readings_stream.read_stream(filter_func=lambda r: r.get("id") == reading_id or r.get("reading_id") == reading_id)
+    if not matches:
         raise HTTPException(status_code=404, detail="Original reading not found")
         
-    correction = ReadingCorrection(
-        original_reading_id=reading_id,
-        corrected_value=corrected_value,
-        reason=reason,
-        requesting_user_id=payload.get("sub")
-    )
-    db.add(correction)
-    db.commit()
+    audit_chain.append_event({
+        "event_type": "READING_CORRECTION_REQUESTED",
+        "original_reading_id": reading_id,
+        "corrected_value": corrected_value,
+        "reason": reason,
+        "requesting_user_id": payload.get("sub"),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
     return {"status": "success", "message": "Correction record appended without modifying original observation."}

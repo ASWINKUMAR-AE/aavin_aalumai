@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, FileSpreadsheet, FileText, Calendar, Filter } from "lucide-react";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
 
 export const ReportsPage: React.FC = () => {
   const handleDownloadCsv = (type: string) => {

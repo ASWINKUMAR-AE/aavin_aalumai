@@ -1,5 +1,5 @@
 import React from "react";
-import { Cpu, CheckCircle, ShieldCheck } from "lucide-react";
+import { Cpu, ShieldCheck } from "lucide-react";
 
 const MACHINES = [
   {

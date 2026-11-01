@@ -1,5 +1,5 @@
 import React from "react";
-import { Scale, Truck, Trash2, ShieldCheck, AlertCircle } from "lucide-react";
+import { Scale, Truck, Trash2 } from "lucide-react";
 
 export const OperationsPage: React.FC = () => {
   return (

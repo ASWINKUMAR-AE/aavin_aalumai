@@ -1,0 +1,26 @@
+[
+  {
+    "id": "34e1dd27-9ddb-4aa5-9c2a-01dc0bce6107",
+    "name": "Shift 1 (Morning)",
+    "start_time": "06:00:00",
+    "end_time": "14:00:00",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  },
+  {
+    "id": "d65bb666-bdd2-4eef-bc12-bb3569552e1a",
+    "name": "Shift 2 (Evening)",
+    "start_time": "14:00:00",
+    "end_time": "22:00:00",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  },
+  {
+    "id": "79d42b25-973a-4060-971d-8650d5f39eb2",
+    "name": "Shift 3 (Night)",
+    "start_time": "22:00:00",
+    "end_time": "06:00:00",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  }
+]

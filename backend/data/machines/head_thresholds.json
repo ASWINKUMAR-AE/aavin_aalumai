@@ -1,0 +1,98 @@
+[
+  {
+    "id": "fc9676b3-f61d-4933-a2ba-580f6c5b54fc",
+    "head_id": "26146050-d1f4-4d47-ab4b-e8d64846d1e0",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "fd7f0a69-2162-4c66-9315-1daf0c5d7130",
+    "head_id": "a51937a5-13ff-4f33-9a90-853460bbbed3",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "276c1fba-96ed-4ba9-916f-6cd7bae23a24",
+    "head_id": "c6a5ca07-8d97-4c33-8506-c9b9e295b87b",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "f37c7858-ec13-4d8e-bef7-df4f18150838",
+    "head_id": "6a77e8b7-a668-4537-8780-1601576e175b",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "fe77a1b5-2302-4739-871e-1e1ea38bac95",
+    "head_id": "e97a8994-83c6-42a2-a5f8-9e9b26a35a20",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "fc1a9950-a9d3-4fe7-803e-ccea15702cfb",
+    "head_id": "122e2a21-76dc-4e03-88db-a20a732e9ac1",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "6a7473ee-fc3a-4e44-842a-67bc22ea8016",
+    "head_id": "a18fa65e-1e2c-42c5-86c8-144c2940a1bf",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "c356febc-568d-4872-82ee-68b6cfbd3ef3",
+    "head_id": "5032091a-b0a8-4aca-bb10-37a64ad54c11",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "0655ece9-964c-42de-b03d-e916c977583f",
+    "head_id": "e89f46e4-2fa7-4f01-b29c-2ba5a9c2d53f",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "05b7b4c6-49fb-4f54-95d9-c629450a01f5",
+    "head_id": "1749fd67-2f03-4c0d-a55d-c67b84551381",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "23626019-568f-451d-966c-35e6caf21fff",
+    "head_id": "33ce6955-7753-4534-8326-8bbf36ae10e0",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  },
+  {
+    "id": "994e237b-0c73-42fe-8073-59005ff76050",
+    "head_id": "f7862cb9-d9cd-4398-ab8b-5177f48199bb",
+    "max_rate_per_hour": 3000,
+    "min_shift_expected": 500,
+    "late_minutes_flag": 15,
+    "time_offset_flag_seconds": 300
+  }
+]

@@ -1,5 +1,4 @@
 import React from "react";
-import { CheckCircle2, AlertCircle, Calendar } from "lucide-react";
 
 export const CalibrationAuditsPage: React.FC = () => {
   return (

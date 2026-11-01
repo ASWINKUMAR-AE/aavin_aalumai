@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { AlertTriangle, ShieldAlert, CheckCircle, Clock, FileText } from "lucide-react";
 
 const ANOMALIES_DATA = [
   {

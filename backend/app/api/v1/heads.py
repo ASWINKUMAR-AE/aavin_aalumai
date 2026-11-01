@@ -1,130 +1,83 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from app.db.session import get_db
+
 from app.core.permissions import get_current_user_payload
-from app.models.machine import Head, Machine
-from app.models.reading import Reading
+from app.storage.store import heads_store, readings_stream
 from app.schemas.schemas import HeadResponse, ReadingResponse, HashChainStatusResponse
 from app.services.hash_chain_service import HashChainService
 
 router = APIRouter(prefix="/heads", tags=["Machine Heads"])
 
+def _enrich_head(h: dict) -> HeadResponse:
+    h_copy = dict(h)
+    h_id = h_copy.get("id")
+    latest = readings_stream.read_stream(filter_func=lambda r: r.get("head_id") == h_id, reverse=True, limit=1)
+    if latest:
+        h_copy["latest_counter"] = latest[0].get("confirmed_value", 0)
+        h_copy["latest_reading_time"] = latest[0].get("server_time")
+    else:
+        h_copy["latest_counter"] = h_copy.get("latest_counter", 0)
+        h_copy["latest_reading_time"] = h_copy.get("latest_reading_time")
+    return HeadResponse(**h_copy)
+
 @router.get("", response_model=List[HeadResponse])
-def get_all_heads(db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
-    heads = db.query(Head).filter(Head.is_active == True).all()
-    # Attach latest counter info
-    results = []
-    for h in heads:
-        latest = (
-            db.query(Reading)
-            .filter(Reading.head_id == h.id)
-            .order_by(Reading.created_at.desc())
-            .first()
-        )
-        h_dict = {
-            "id": h.id,
-            "machine_id": h.machine_id,
-            "head_code": h.head_code,
-            "head_number": h.head_number,
-            "qr_identifier": h.qr_identifier,
-            "rated_speed_per_hour": h.rated_speed_per_hour,
-            "genesis_hash": h.genesis_hash,
-            "current_hash": h.current_hash,
-            "is_active": h.is_active,
-            "latest_counter": latest.count if latest else 0,
-            "latest_reading_time": latest.created_at if latest else None
-        }
-        results.append(HeadResponse(**h_dict))
-    return results
+def get_all_heads(payload: dict = Depends(get_current_user_payload)):
+    heads = heads_store.query(lambda h: h.get("is_active", True))
+    return [_enrich_head(h) for h in heads]
 
 @router.get("/lookup-qr", response_model=HeadResponse)
-def lookup_by_qr(qr: str = Query(...), db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
-    head = db.query(Head).filter(Head.qr_identifier == qr, Head.is_active == True).first()
-    if not head:
+def lookup_by_qr(qr: str = Query(...), payload: dict = Depends(get_current_user_payload)):
+    matches = heads_store.query(lambda h: h.get("qr_identifier") == qr and h.get("is_active", True))
+    if not matches:
         raise HTTPException(status_code=404, detail="Unrecognized Head QR code")
-    
-    latest = (
-        db.query(Reading)
-        .filter(Reading.head_id == head.id)
-        .order_by(Reading.created_at.desc())
-        .first()
-    )
-    return HeadResponse(
-        id=head.id,
-        machine_id=head.machine_id,
-        head_code=head.head_code,
-        head_number=head.head_number,
-        qr_identifier=head.qr_identifier,
-        rated_speed_per_hour=head.rated_speed_per_hour,
-        genesis_hash=head.genesis_hash,
-        current_hash=head.current_hash,
-        is_active=head.is_active,
-        latest_counter=latest.count if latest else 0,
-        latest_reading_time=latest.created_at if latest else None
-    )
+    return _enrich_head(matches[0])
 
 @router.get("/{head_id}", response_model=HeadResponse)
-def get_head(head_id: str, db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
-    head = db.query(Head).filter(Head.id == head_id).first()
+def get_head(head_id: str, payload: dict = Depends(get_current_user_payload)):
+    head = heads_store.get_by_id(head_id)
+    if not head:
+        matches = heads_store.query(lambda h: h.get("head_code") == head_id)
+        head = matches[0] if matches else None
     if not head:
         raise HTTPException(status_code=404, detail="Head not found")
-    
-    latest = (
-        db.query(Reading)
-        .filter(Reading.head_id == head.id)
-        .order_by(Reading.created_at.desc())
-        .first()
-    )
-    return HeadResponse(
-        id=head.id,
-        machine_id=head.machine_id,
-        head_code=head.head_code,
-        head_number=head.head_number,
-        qr_identifier=head.qr_identifier,
-        rated_speed_per_hour=head.rated_speed_per_hour,
-        genesis_hash=head.genesis_hash,
-        current_hash=head.current_hash,
-        is_active=head.is_active,
-        latest_counter=latest.count if latest else 0,
-        latest_reading_time=latest.created_at if latest else None
-    )
+    return _enrich_head(head)
 
 @router.get("/{head_id}/chain-status", response_model=HashChainStatusResponse)
-def get_chain_status(head_id: str, db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
-    head = db.query(Head).filter(Head.id == head_id).first()
+def get_chain_status(head_id: str, payload: dict = Depends(get_current_user_payload)):
+    head = heads_store.get_by_id(head_id)
+    if not head:
+        matches = heads_store.query(lambda h: h.get("head_code") == head_id)
+        head = matches[0] if matches else None
     if not head:
         raise HTTPException(status_code=404, detail="Head not found")
 
-    is_valid, total_checked, discrepancies = HashChainService.verify_head_chain(db, head_id)
+    is_valid, total_checked, discrepancies = HashChainService.verify_head_chain(head_id=head.get("id"))
+
     return HashChainStatusResponse(
-        head_id=head.id,
-        head_code=head.head_code,
+        head_id=head.get("id"),
+        head_code=head.get("head_code"),
         is_valid=is_valid,
         total_checked=total_checked,
-        genesis_hash=head.genesis_hash,
-        latest_hash=head.current_hash,
+        genesis_hash=head.get("genesis_hash", ""),
+        latest_hash=head.get("current_hash", ""),
         last_verified_at=datetime.now(timezone.utc),
         discrepancies=discrepancies
     )
 
 @router.post("/{head_id}/verify-chain", response_model=HashChainStatusResponse)
-def trigger_chain_verification(head_id: str, db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
-    return get_chain_status(head_id, db, payload)
+def trigger_chain_verification(head_id: str, payload: dict = Depends(get_current_user_payload)):
+    return get_chain_status(head_id, payload)
 
 @router.get("/{head_id}/history", response_model=List[ReadingResponse])
 def get_head_reading_history(
     head_id: str,
     limit: int = 50,
-    db: Session = Depends(get_db),
     payload: dict = Depends(get_current_user_payload)
 ):
-    readings = (
-        db.query(Reading)
-        .filter(Reading.head_id == head_id)
-        .order_by(Reading.created_at.desc())
-        .limit(limit)
-        .all()
+    readings = readings_stream.read_stream(
+        filter_func=lambda r: r.get("head_id") == head_id or r.get("head_code") == head_id,
+        reverse=True,
+        limit=limit
     )
-    return readings
+    return [ReadingResponse(**r) for r in readings]

@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Settings, Bell, Lock, ShieldAlert } from "lucide-react";
+import { Users, Settings, ShieldAlert } from "lucide-react";
 
 export const AdminManagementPage: React.FC = () => {
   return (

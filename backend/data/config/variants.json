@@ -1,0 +1,50 @@
+[
+  {
+    "id": "6624f0b3-6ccd-4936-abbc-2e1b4cc4f7dd",
+    "code": "TM-500",
+    "name": "Aavin Toned Milk (Blue)",
+    "fat_percentage": 3.0,
+    "snf_percentage": 8.5,
+    "pouch_volume_ml": 500,
+    "pouches_per_crate": 20,
+    "color_code": "#0A73C0",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  },
+  {
+    "id": "82db2544-7807-4931-a798-0e3c0b15e91e",
+    "code": "SM-500",
+    "name": "Aavin Standardized Milk (Green)",
+    "fat_percentage": 4.5,
+    "snf_percentage": 8.5,
+    "pouch_volume_ml": 500,
+    "pouches_per_crate": 20,
+    "color_code": "#7CB340",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  },
+  {
+    "id": "714e8a69-28cf-4978-92ab-ac1a39a0caf9",
+    "code": "FCM-500",
+    "name": "Aavin Full Cream Milk (Orange)",
+    "fat_percentage": 6.0,
+    "snf_percentage": 9.0,
+    "pouch_volume_ml": 500,
+    "pouches_per_crate": 20,
+    "color_code": "#FF8C00",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  },
+  {
+    "id": "4d6e9cdd-41fa-49a1-8afa-16b6ba774ede",
+    "code": "DTM-500",
+    "name": "Aavin Double Toned Milk (Magenta)",
+    "fat_percentage": 1.5,
+    "snf_percentage": 9.0,
+    "pouch_volume_ml": 500,
+    "pouches_per_crate": 20,
+    "color_code": "#C2185B",
+    "is_active": true,
+    "created_at": "2026-11-01T10:08:27.642902+00:00"
+  }
+]

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getDashboardSummary } from "../services/api";
-import { ShieldCheck, AlertTriangle, Cpu, TrendingUp, CheckCircle, Package } from "lucide-react";
+import { ShieldCheck, AlertTriangle, TrendingUp, CheckCircle, Package } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const MOCK_CHART_DATA = [
