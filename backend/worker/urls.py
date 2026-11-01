@@ -3,6 +3,9 @@ from . import views
 
 urlpatterns = [
     path("health", views.health),
+    path("machines", views.machines),
+    path("machines/qr", views.machine_qrs),
+    path("machines/qr/<str:qr_id>/regenerate", views.regenerate_qr),
     path("machines/qr/validate", views.validate_qr),
     path("machines/<str:machine_id>", views.machine_detail),
     path("readings", views.readings),

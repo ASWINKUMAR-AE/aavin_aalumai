@@ -61,6 +61,34 @@ def machine_detail(request, machine_id):
     return Response(machine_payload(machine))
 
 
+@api_view(["GET"])
+def machines(request):
+    return Response([machine_payload(machine) for machine in Machine.objects.prefetch_related("heads").filter(is_active=True).order_by("code")])
+
+
+@api_view(["GET"])
+def machine_qrs(request):
+    return Response([{
+        "machine_id": machine.code, "machine_code": machine.code, "machine_name": machine.name,
+        "machine_type": machine.machine_type, "qr_id": machine.qr_id, "qr_version": machine.qr_version,
+        "qr_status": machine.qr_status, "qr_payload": f'{{"type":"AAVIN_MACHINE","version":{machine.qr_version},"machine_id":"{machine.code}","qr_id":"{machine.qr_id}"}}',
+        "head_count": machine.heads.count(),
+    } for machine in Machine.objects.prefetch_related("heads").filter(is_active=True).order_by("code")])
+
+
+@api_view(["POST"])
+def regenerate_qr(request, qr_id):
+    machine = Machine.objects.filter(qr_id=qr_id, is_active=True).first()
+    if not machine:
+        raise Http404("Machine QR not found")
+    reason = str(request.data.get("reason", "")).strip()
+    if not reason:
+        return Response({"detail": "A regeneration reason is required."}, status=400)
+    machine.qr_version += 1
+    machine.save(update_fields=["qr_version", "updated_at"])
+    return Response({"success": True, "qr_id": machine.qr_id, "version": machine.qr_version})
+
+
 @api_view(["POST"])
 def validate_qr(request):
     raw = str(request.data.get("qr_text", ""))

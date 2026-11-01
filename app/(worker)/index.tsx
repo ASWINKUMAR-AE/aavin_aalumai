@@ -14,6 +14,7 @@ import { AavinHeader } from "../../components/brand/AavinHeader";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { OfflineQueueService } from "../../services/offlineQueue";
+import { apiClient } from "../../services/api";
 
 export interface MachineHead {
   id: string;
@@ -112,6 +113,29 @@ export default function WorkerHomeScreen() {
   }, []);
 
   const loadMachineState = async () => {
+    try {
+      const response = await apiClient.get("/machines");
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        const apiMachines: MachineUnit[] = response.data.map((machine: any) => ({
+          code: machine.machine_code,
+          qrId: machine.qr_id,
+          name: machine.name,
+          type: machine.machine_type,
+          heads: (machine.heads || []).map((head: any) => ({
+            id: head.head_code || head.id,
+            number: head.head_number || head.number,
+            lastCount: head.latest_counter || 0,
+            status: head.latest_counter > 0 ? "completed" : "pending",
+            variant: "TM-500",
+          })),
+        }));
+        setMachines(apiMachines);
+        await AsyncStorage.setItem(MACHINE_STATE_STORAGE_KEY, JSON.stringify(apiMachines));
+        return;
+      }
+    } catch {
+      // Use the last successful API snapshot or initial configuration while offline.
+    }
     try {
       const saved = await AsyncStorage.getItem(MACHINE_STATE_STORAGE_KEY);
       if (saved) {
