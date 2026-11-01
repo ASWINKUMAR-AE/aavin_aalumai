@@ -75,3 +75,6 @@ expo-env.d.ts
 # @end expo-cli
 backend/storage/evidence/*
 !backend/storage/evidence/.gitkeep
+
+backend/backend/
+

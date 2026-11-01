@@ -84,8 +84,8 @@ export default function MachineDetailsScreen() {
           genesis_hash: "54ca113b8dbc9d99f018eac3528b9d21c784ee09b81239aa81f08e458760086c",
           current_hash: "54ca113b8dbc9d99f018eac3528b9d21c784ee09b81239aa81f08e458760086c",
           is_active: true,
-          latest_counter: 845230,
-          latest_reading_time: "07:55 AM",
+          latest_counter: 0,
+          latest_reading_time: "Not recorded",
         },
         {
           id: `${machineId}-H2`,
@@ -97,8 +97,8 @@ export default function MachineDetailsScreen() {
           genesis_hash: "4422f711fdb1ccae77b21901ddfa456102aa2918809bc4510091aa02991044bb",
           current_hash: "4422f711fdb1ccae77b21901ddfa456102aa2918809bc4510091aa02991044bb",
           is_active: true,
-          latest_counter: 762450,
-          latest_reading_time: "07:56 AM",
+          latest_counter: 0,
+          latest_reading_time: "Not recorded",
         },
       ];
 

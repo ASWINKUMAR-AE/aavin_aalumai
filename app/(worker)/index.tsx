@@ -6,97 +6,187 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AavinHeader } from "../../components/brand/AavinHeader";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { OfflineQueueService } from "../../services/offlineQueue";
 
-const INITIAL_MACHINES = [
+export interface MachineHead {
+  id: string;
+  number: number;
+  lastCount: number;
+  status: "pending" | "completed";
+  variant: string;
+}
+
+export interface MachineUnit {
+  code: string;
+  qrId: string;
+  name: string;
+  type: string;
+  heads: MachineHead[];
+}
+
+/**
+ * Authoritative 6 Primary Machine Configuration with 12 independently tracked heads.
+ * Initialized in fresh newly-installed state: All 12 heads pending with 0 entered readings.
+ */
+export const FRESH_INSTALLED_MACHINES: MachineUnit[] = [
   {
     code: "RMC-01",
+    qrId: "QR-001",
     name: "RMC VFFS Machine 1",
     type: "RMC",
     heads: [
-      { id: "RMC-01-H1", number: 1, lastCount: 845230, status: "completed", variant: "TM-500" },
-      { id: "RMC-01-H2", number: 2, lastCount: 841100, status: "completed", variant: "TM-500" },
+      { id: "RMC-01-H1", number: 1, lastCount: 0, status: "pending", variant: "TM-500" },
+      { id: "RMC-01-H2", number: 2, lastCount: 0, status: "pending", variant: "TM-500" },
     ],
   },
   {
     code: "RMC-02",
+    qrId: "QR-002",
     name: "RMC VFFS Machine 2",
     type: "RMC",
     heads: [
-      { id: "RMC-02-H1", number: 1, lastCount: 520400, status: "completed", variant: "SM-500" },
-      { id: "RMC-02-H2", number: 2, lastCount: 518900, status: "pending", variant: "SM-500" },
+      { id: "RMC-02-H1", number: 1, lastCount: 0, status: "pending", variant: "SM-500" },
+      { id: "RMC-02-H2", number: 2, lastCount: 0, status: "pending", variant: "SM-500" },
     ],
   },
   {
-    code: "SAMARPAN-01",
+    code: "SMP-01",
+    qrId: "QR-003",
     name: "Samarpan Integrus 1",
     type: "Samarpan",
     heads: [
-      { id: "SAMARPAN-01-H1", number: 1, lastCount: 312450, status: "pending", variant: "FCM-500" },
-      { id: "SAMARPAN-01-H2", number: 2, lastCount: 310890, status: "pending", variant: "FCM-500" },
+      { id: "SMP-01-H1", number: 1, lastCount: 0, status: "pending", variant: "FCM-500" },
+      { id: "SMP-01-H2", number: 2, lastCount: 0, status: "pending", variant: "FCM-500" },
     ],
   },
   {
-    code: "SAMARPAN-02",
+    code: "SMP-02",
+    qrId: "QR-004",
     name: "Samarpan Integrus 2",
     type: "Samarpan",
     heads: [
-      { id: "SAMARPAN-02-H1", number: 1, lastCount: 654200, status: "pending", variant: "TM-500" },
-      { id: "SAMARPAN-02-H2", number: 2, lastCount: 652100, status: "pending", variant: "TM-500" },
+      { id: "SMP-02-H1", number: 1, lastCount: 0, status: "pending", variant: "TM-500" },
+      { id: "SMP-02-H2", number: 2, lastCount: 0, status: "pending", variant: "TM-500" },
     ],
   },
   {
-    code: "SAMARPAN-03",
+    code: "SMP-03",
+    qrId: "QR-005",
     name: "Samarpan Integrus 3",
     type: "Samarpan",
     heads: [
-      { id: "SAMARPAN-03-H1", number: 1, lastCount: 198400, status: "pending", variant: "DTM-500" },
-      { id: "SAMARPAN-03-H2", number: 2, lastCount: 197250, status: "pending", variant: "DTM-500" },
+      { id: "SMP-03-H1", number: 1, lastCount: 0, status: "pending", variant: "DTM-500" },
+      { id: "SMP-03-H2", number: 2, lastCount: 0, status: "pending", variant: "DTM-500" },
     ],
   },
   {
-    code: "ATOMIC-01",
-    name: "Atomic Engineers Pouch Pack 1",
+    code: "ATM-01",
+    qrId: "QR-006",
+    name: "Atomic Engineers 1",
     type: "Atomic Engineers",
     heads: [
-      { id: "ATOMIC-01-H1", number: 1, lastCount: 442100, status: "pending", variant: "SM-500" },
-      { id: "ATOMIC-01-H2", number: 2, lastCount: 440950, status: "pending", variant: "SM-500" },
-    ],
-  },
-  {
-    code: "ATOMIC-02",
-    name: "Atomic Engineers Pouch Pack 2",
-    type: "Atomic Engineers",
-    heads: [
-      { id: "ATOMIC-02-H1", number: 1, lastCount: 785600, status: "pending", variant: "TM-500" },
-      { id: "ATOMIC-02-H2", number: 2, lastCount: 783400, status: "pending", variant: "TM-500" },
+      { id: "ATM-01-H1", number: 1, lastCount: 0, status: "pending", variant: "SM-500" },
+      { id: "ATM-01-H2", number: 2, lastCount: 0, status: "pending", variant: "SM-500" },
     ],
   },
 ];
 
+const MACHINE_STATE_STORAGE_KEY = "@aavin_worker_machines_fresh_state";
+
 export default function WorkerHomeScreen() {
   const router = useRouter();
+  const [machines, setMachines] = useState<MachineUnit[]>(FRESH_INSTALLED_MACHINES);
   const [refreshing, setRefreshing] = useState(false);
   const [offlineCount, setOfflineCount] = useState(0);
 
   useEffect(() => {
+    loadMachineState();
     checkQueue();
   }, []);
 
+  const loadMachineState = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(MACHINE_STATE_STORAGE_KEY);
+      if (saved) {
+        setMachines(JSON.parse(saved));
+      } else {
+        setMachines(FRESH_INSTALLED_MACHINES);
+      }
+    } catch {
+      setMachines(FRESH_INSTALLED_MACHINES);
+    }
+  };
+
   const checkQueue = async () => {
     const queue = await OfflineQueueService.getQueue();
-    setOfflineCount(queue.filter((q) => q.status === "pending").length);
+    const displayQueue = await OfflineQueueService.getDisplayQueue();
+    const totalPending =
+      queue.filter((q) => q.status === "pending").length +
+      displayQueue.filter((q) => q.status === "pending").length;
+    setOfflineCount(totalPending);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     await checkQueue();
+    await loadMachineState();
     setRefreshing(false);
+  };
+
+  // Factory Reset / Fresh App Install State Handler
+  const handleFactoryReset = () => {
+    Alert.alert(
+      "Reset App & Clear All Data",
+      "This will clear all entered counter readings, wipe offline queues, and reset all 6 machines and 12 heads to the newly installed clean state (0 readings recorded).",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear All Data",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem(MACHINE_STATE_STORAGE_KEY);
+              await AsyncStorage.removeItem("@aavin_offline_readings_queue");
+              await AsyncStorage.removeItem("@aavin_offline_display_evidence_queue");
+              setMachines(FRESH_INSTALLED_MACHINES);
+              setOfflineCount(0);
+              Alert.alert(
+                "Fresh Start Activated",
+                "App has been reset to newly installed state. All 6 machines and 12 heads are now PENDING with 0 recorded readings."
+              );
+            } catch (err: any) {
+              Alert.alert("Reset Error", err.message || "Failed to clear data.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Compute live KPI metrics dynamically from active heads
+  const allHeads = machines.flatMap((m) => m.heads);
+  const totalHeadsCount = allHeads.length;
+  const completedCount = allHeads.filter((h) => h.status === "completed").length;
+  const pendingCount = totalHeadsCount - completedCount;
+
+  const handleMachinePress = (machine: MachineUnit) => {
+    router.push({
+      pathname: "/(worker)/display-capture",
+      params: {
+        machineId: machine.code,
+        qrId: machine.qrId,
+        machineName: machine.name,
+        machineType: machine.type,
+        shiftName: "Shift 1 (Morning)",
+      },
+    });
   };
 
   return (
@@ -109,20 +199,29 @@ export default function WorkerHomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* KPI Stats Grid */}
+        {/* KPI Stats Grid - Dynamically calculated */}
         <View style={styles.statsCard}>
-          <Text style={styles.sectionHeader}>SHIFT RECORDING STATUS</Text>
+          <View style={styles.statsHeaderRow}>
+            <Text style={styles.sectionHeader}>SHIFT RECORDING STATUS</Text>
+            <View style={styles.freshTag}>
+              <Text style={styles.freshTagText}>FRESH SHIFT</Text>
+            </View>
+          </View>
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>14</Text>
+              <Text style={styles.statNumber}>{totalHeadsCount}</Text>
               <Text style={styles.statLabel}>Expected Heads</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNumber, { color: Colors.success }]}>3</Text>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>
+                {completedCount}
+              </Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNumber, { color: Colors.warning }]}>11</Text>
+              <Text style={[styles.statNumber, { color: Colors.warning }]}>
+                {pendingCount}
+              </Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statBox}>
@@ -172,10 +271,10 @@ export default function WorkerHomeScreen() {
 
           <TouchableOpacity
             style={styles.secondaryActionBtn}
-            onPress={() => router.push("/(worker)/reset-request")}
+            onPress={() => router.push("/(worker)/readings")}
           >
-            <Ionicons name="refresh-circle-outline" size={20} color={Colors.secondary} />
-            <Text style={styles.secondaryActionText}>Reset Req</Text>
+            <Ionicons name="time-outline" size={20} color="#10b981" />
+            <Text style={styles.secondaryActionText}>Readings</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -187,14 +286,30 @@ export default function WorkerHomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Machines List (7 machines, 14 heads) */}
-        <Text style={styles.listTitle}>Assigned VFFS Machines (7 Units)</Text>
+        {/* Machines List (Exact 6 Primary Units, 12 Heads) */}
+        <View style={styles.listHeaderRow}>
+          <Text style={styles.listTitle}>Assigned VFFS Machines (6 Units • 12 Heads)</Text>
+          <TouchableOpacity onPress={handleFactoryReset} style={styles.resetPill}>
+            <Ionicons name="refresh" size={13} color="#ef4444" />
+            <Text style={styles.resetPillText}>Reset Data</Text>
+          </TouchableOpacity>
+        </View>
 
-        {INITIAL_MACHINES.map((machine) => (
-          <View key={machine.code} style={styles.machineCard}>
+        {machines.map((machine) => (
+          <TouchableOpacity
+            key={machine.code}
+            style={styles.machineCard}
+            onPress={() => handleMachinePress(machine)}
+            activeOpacity={0.85}
+          >
             <View style={styles.machineHeader}>
               <View>
-                <Text style={styles.machineCode}>{machine.code}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={styles.machineCode}>{machine.code}</Text>
+                  <View style={styles.qrBadge}>
+                    <Text style={styles.qrBadgeText}>{machine.qrId}</Text>
+                  </View>
+                </View>
                 <Text style={styles.machineName}>{machine.name}</Text>
               </View>
               <View style={styles.typeBadge}>
@@ -208,7 +323,10 @@ export default function WorkerHomeScreen() {
                   <View style={styles.headInfo}>
                     <Text style={styles.headTitle}>Head {head.number}</Text>
                     <Text style={styles.headCounter}>
-                      Counter: <Text style={styles.counterVal}>{head.lastCount.toLocaleString()}</Text>
+                      Counter:{" "}
+                      <Text style={styles.counterVal}>
+                        {head.lastCount === 0 ? "0 (Unrecorded)" : head.lastCount.toLocaleString()}
+                      </Text>
                     </Text>
                   </View>
 
@@ -235,8 +353,25 @@ export default function WorkerHomeScreen() {
                 </View>
               ))}
             </View>
-          </View>
+
+            <View style={styles.machineCardFooter}>
+              <Ionicons name="camera-outline" size={14} color={Colors.primary} />
+              <Text style={styles.machineCardFooterText}>
+                Tap to open Machine Display Capture for {machine.code}
+              </Text>
+            </View>
+          </TouchableOpacity>
         ))}
+
+        {/* Clear Data & Fresh Install Button */}
+        <TouchableOpacity
+          style={styles.factoryResetBtn}
+          onPress={handleFactoryReset}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="trash-bin-outline" size={16} color="#ef4444" />
+          <Text style={styles.factoryResetBtnText}>CLEAR DATA & RESET TO FRESH INSTALL</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -259,12 +394,29 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 16,
   },
+  statsHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   sectionHeader: {
     fontSize: 11,
     fontWeight: "800",
     color: Colors.textSecondary,
     letterSpacing: 1,
-    marginBottom: 12,
+  },
+  freshTag: {
+    backgroundColor: "#dbeafe",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  freshTagText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#1d4ed8",
+    letterSpacing: 0.5,
   },
   statsRow: {
     flexDirection: "row",
@@ -294,13 +446,13 @@ const styles = StyleSheet.create({
     elevation: 4,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
   },
   scanIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 12,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
@@ -316,44 +468,62 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   primaryScanBtnSub: {
-    color: "rgba(255, 255, 255, 0.85)",
-    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 12,
     marginTop: 2,
   },
   actionRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
     marginBottom: 20,
   },
   secondaryActionBtn: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 12,
     paddingVertical: 12,
-    paddingHorizontal: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 6,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
   secondaryActionText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "700",
     color: Colors.text,
   },
+  listHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   listTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800",
-    color: Colors.secondary,
+    color: Colors.textSecondary,
     letterSpacing: 0.5,
-    marginBottom: 12,
+  },
+  resetPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#fee2e2",
+  },
+  resetPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#ef4444",
   },
   machineCard: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 12,
@@ -363,24 +533,35 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    borderBottomColor: Colors.border,
     paddingBottom: 10,
     marginBottom: 10,
   },
   machineCode: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "900",
     color: Colors.text,
+  },
+  qrBadge: {
+    backgroundColor: "#f1f5f9",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  qrBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#64748b",
   },
   machineName: {
     fontSize: 12,
     color: Colors.textSecondary,
-    marginTop: 1,
+    marginTop: 2,
   },
   typeBadge: {
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: "rgba(10, 115, 192, 0.08)",
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 6,
   },
   typeBadgeText: {
@@ -395,37 +576,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: Colors.borderLight,
+    backgroundColor: "#F8FAFC",
     padding: 10,
     borderRadius: 8,
   },
   headInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    flex: 1,
   },
   headTitle: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
     color: Colors.text,
   },
   headCounter: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
   counterVal: {
-    fontWeight: "700",
-    color: Colors.primary,
+    fontWeight: "800",
+    color: Colors.text,
   },
   headStatus: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   dotCompleted: {
     backgroundColor: Colors.success,
@@ -443,5 +623,36 @@ const styles = StyleSheet.create({
   textPending: {
     color: Colors.warning,
   },
+  machineCardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+  },
+  machineCardFooterText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: "600",
+  },
+  factoryResetBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    backgroundColor: "#fff1f2",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#fecdd3",
+    marginTop: 8,
+  },
+  factoryResetBtnText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#e11d48",
+    letterSpacing: 0.5,
+  },
 });
-

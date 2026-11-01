@@ -56,7 +56,7 @@ const DEMO_READINGS = [
 
 export default function MyReadingsScreen() {
   const insets = useSafeAreaInsets();
-  const [readings, setReadings] = useState(DEMO_READINGS);
+  const [readings, setReadings] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -66,11 +66,11 @@ export default function MyReadingsScreen() {
   const fetchReadings = async () => {
     try {
       const res = await apiClient.get("/readings?limit=20");
-      if (res.data && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         setReadings(res.data);
       }
     } catch {
-      // Keep demo items
+      // Empty fresh state
     }
   };
 
@@ -97,44 +97,56 @@ export default function MyReadingsScreen() {
           Immutable Evidence: Historical readings cannot be modified or deleted.
         </Text>
 
-        {readings.map((r: any) => (
-          <View key={r.id} style={styles.readingCard}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.headText}>{r.headId || r.head_id}</Text>
-                <Text style={styles.timeText}>{r.time || new Date(r.created_at).toLocaleTimeString()}</Text>
+        {readings.length === 0 ? (
+          <View style={{ alignItems: "center", paddingVertical: 48, paddingHorizontal: 24, gap: 12 }}>
+            <Ionicons name="documents-outline" size={54} color="#94a3b8" />
+            <Text style={{ fontSize: 16, fontWeight: "800", color: Colors.text }}>
+              No Readings Recorded Yet
+            </Text>
+            <Text style={{ fontSize: 12, color: Colors.textSecondary, textAlign: "center", lineHeight: 18 }}>
+              App is in newly installed fresh shift mode. Scan a machine QR code to record your first machine display reading.
+            </Text>
+          </View>
+        ) : (
+          readings.map((r: any) => (
+            <View key={r.id} style={styles.readingCard}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.headText}>{r.headId || r.head_id}</Text>
+                  <Text style={styles.timeText}>{r.time || new Date(r.created_at).toLocaleTimeString()}</Text>
+                </View>
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="link" size={13} color={Colors.primary} />
+                  <Text style={styles.verifiedText}>CHAIN VERIFIED</Text>
+                </View>
               </View>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="link" size={13} color={Colors.primary} />
-                <Text style={styles.verifiedText}>CHAIN VERIFIED</Text>
-              </View>
-            </View>
 
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Confirmed Reading</Text>
-                <Text style={styles.statVal}>{(r.confirmedValue || r.confirmed_value || r.count).toLocaleString()}</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Confirmed Reading</Text>
+                  <Text style={styles.statVal}>{(r.confirmedValue || r.confirmed_value || r.count).toLocaleString()}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Production Delta</Text>
+                  <Text style={[styles.statVal, { color: Colors.success }]}>
+                    +{(r.delta || r.production_delta || 0).toLocaleString()} pkts
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Variant</Text>
+                  <Text style={styles.statVal}>{r.variantId || r.variant_id}</Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Production Delta</Text>
-                <Text style={[styles.statVal, { color: Colors.success }]}>
-                  +{(r.delta || r.production_delta || 0).toLocaleString()} pkts
+
+              <View style={styles.hashBox}>
+                <Text style={styles.hashLabel}>HASH:</Text>
+                <Text style={styles.hashVal} numberOfLines={1}>
+                  {r.hash}
                 </Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Variant</Text>
-                <Text style={styles.statVal}>{r.variantId || r.variant_id}</Text>
-              </View>
             </View>
-
-            <View style={styles.hashBox}>
-              <Text style={styles.hashLabel}>HASH:</Text>
-              <Text style={styles.hashVal} numberOfLines={1}>
-                {r.hash}
-              </Text>
-            </View>
-          </View>
-        ))}
+          ))
+        )}
       </ScrollView>
     </View>
   );
