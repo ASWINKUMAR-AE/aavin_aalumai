@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ho-test-1",
+    "shift_id": "shift-1",
+    "shift_name": "Shift 1 (Morning)",
+    "handover_time": "2026-11-01T14:00:00Z",
+    "outgoing_supervisor": "Venkatesh R.",
+    "incoming_supervisor": "Senthil P.",
+    "completed_heads_count": 12,
+    "missing_heads_count": 0,
+    "missing_head_codes": [],
+    "total_shift_production": 42000,
+    "total_shift_wastage": 120,
+    "active_anomalies_count": 0,
+    "handover_notes": "All 12 packaging heads operating within rated speed bands.",
+    "status": "completed"
+  }
+]

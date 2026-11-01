@@ -4,10 +4,15 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 
 from app.core.permissions import get_current_user_payload, require_permission
-from app.storage.store import wastage_store, dispatch_store, milk_balance_store, calibrations_store
+from app.storage.store import (
+    wastage_store, dispatch_store, milk_balance_store, calibrations_store,
+    shift_handovers_store, downtime_store, heads_store, machines_store,
+    readings_stream, anomalies_store, audit_chain, users_store
+)
 from app.schemas.schemas import (
     WastageCreateRequest, WastageResponse,
-    DispatchCreateRequest, MilkBalanceCreateRequest, CalibrationAuditCreate
+    DispatchCreateRequest, MilkBalanceCreateRequest, CalibrationAuditCreate,
+    ShiftHandoverRequest, ShiftHandoverResponse, DowntimeLogRequest, DowntimeLogResponse
 )
 from app.services.ocr_table_parser import (
     extract_table_from_zethub_ocr,
@@ -214,3 +219,132 @@ async def process_table_ocr(
         return parsed
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Table OCR failed: {str(e)}")
+
+
+# 6. Shift Handover & Reconciliation
+@router.post("/shift-handover", response_model=ShiftHandoverResponse)
+def submit_shift_handover(
+    req: ShiftHandoverRequest,
+    payload: dict = Depends(require_permission("supervisor.verify"))
+):
+    """
+    Submits official shift handover ledger reconciliation.
+    Evaluates completed vs expected head readings, detects unrecorded heads,
+    and logs immutable handover event into the audit chain.
+    """
+    actor_id = payload.get("sub", "supervisor")
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+
+    heads = heads_store.query(lambda h: h.get("is_active", True))
+    all_head_ids = {h.get("id"): h.get("head_code") for h in heads}
+
+    # Readings recorded during this shift
+    recent_readings = readings_stream.read_stream(limit=100, reverse=True)
+    recorded_head_ids = {r.get("head_id") for r in recent_readings if r.get("head_id")}
+
+    completed_heads = [h_id for h_id in all_head_ids if h_id in recorded_head_ids]
+    missing_head_ids = [h_id for h_id in all_head_ids if h_id not in recorded_head_ids]
+    missing_codes = [all_head_ids[h_id] for h_id in missing_head_ids]
+
+    total_prod = sum(r.get("production_delta", 0) for r in recent_readings)
+    total_waste = sum(w.get("packet_count", 0) for w in wastage_store.read_all())
+
+    active_anomalies = anomalies_store.query(lambda a: a.get("status") == "active")
+
+    outgoing_user = users_store.get_by_id(req.outgoing_supervisor_id or actor_id)
+    incoming_user = users_store.get_by_id(req.incoming_supervisor_id or actor_id)
+
+    handover_id = str(uuid.uuid4())
+    doc = {
+        "id": handover_id,
+        "shift_id": req.shift_id,
+        "shift_name": req.shift_name,
+        "handover_time": now_iso,
+        "outgoing_supervisor": outgoing_user.get("full_name") if outgoing_user else "Supervisor (Outgoing)",
+        "incoming_supervisor": incoming_user.get("full_name") if incoming_user else "Supervisor (Incoming)",
+        "completed_heads_count": len(completed_heads),
+        "missing_heads_count": len(missing_head_ids),
+        "missing_head_codes": missing_codes,
+        "total_shift_production": total_prod,
+        "total_shift_wastage": total_waste,
+        "active_anomalies_count": len(active_anomalies),
+        "handover_notes": req.handover_notes,
+        "status": "completed" if len(missing_head_ids) == 0 else "handover_with_missing_heads"
+    }
+
+    shift_handovers_store.insert(doc)
+
+    audit_chain.append_event({
+        "event_type": "SHIFT_HANDOVER_EXECUTED",
+        "handover_id": handover_id,
+        "shift_name": req.shift_name,
+        "outgoing_supervisor": doc["outgoing_supervisor"],
+        "incoming_supervisor": doc["incoming_supervisor"],
+        "missing_heads": missing_codes,
+        "timestamp": now_iso
+    })
+
+    return ShiftHandoverResponse(**doc)
+
+@router.get("/shift-handover", response_model=List[ShiftHandoverResponse])
+def list_shift_handovers(payload: dict = Depends(get_current_user_payload)):
+    items = shift_handovers_store.read_all()
+    items.sort(key=lambda x: x.get("handover_time", ""), reverse=True)
+    return [ShiftHandoverResponse(**x) for x in items]
+
+
+# 7. Machine Downtime & Interruption Tracking
+@router.post("/downtime", response_model=DowntimeLogResponse)
+def log_machine_downtime(
+    req: DowntimeLogRequest,
+    payload: dict = Depends(get_current_user_payload)
+):
+    actor_id = payload.get("sub", "worker")
+    user = users_store.get_by_id(actor_id)
+    logged_by = user.get("full_name") if user else "Operator"
+
+    machine = machines_store.get_by_id(req.machine_id)
+    if not machine:
+        matches = machines_store.query(lambda m: m.get("machine_code") == req.machine_id)
+        machine = matches[0] if matches else None
+    m_code = machine.get("machine_code") if machine else req.machine_id
+
+    entry_id = str(uuid.uuid4())
+    now_iso = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "id": entry_id,
+        "machine_id": req.machine_id,
+        "machine_code": m_code,
+        "head_id": req.head_id,
+        "interruption_type": req.interruption_type,
+        "reason": req.reason,
+        "duration_minutes": req.duration_minutes,
+        "logged_by": logged_by,
+        "created_at": now_iso
+    }
+
+    downtime_store.insert(doc)
+
+    audit_chain.append_event({
+        "event_type": "MACHINE_DOWNTIME_LOGGED",
+        "downtime_id": entry_id,
+        "machine_code": m_code,
+        "interruption_type": req.interruption_type,
+        "duration_minutes": req.duration_minutes,
+        "logged_by": logged_by,
+        "timestamp": now_iso
+    })
+
+    return DowntimeLogResponse(**doc)
+
+@router.get("/downtime", response_model=List[DowntimeLogResponse])
+def list_downtime_logs(
+    machine_id: Optional[str] = Query(None),
+    payload: dict = Depends(get_current_user_payload)
+):
+    items = downtime_store.read_all()
+    if machine_id:
+        items = [i for i in items if i.get("machine_id") == machine_id or i.get("machine_code") == machine_id]
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return [DowntimeLogResponse(**x) for x in items]

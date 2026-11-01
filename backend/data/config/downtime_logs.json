@@ -1,0 +1,13 @@
+[
+  {
+    "id": "dt-test-1",
+    "machine_id": "SMP-01",
+    "machine_code": "SMP-01",
+    "head_id": "SMP-01-H1",
+    "interruption_type": "film_roll_replacement",
+    "reason": "Standard roll transition after 5,000 pouches",
+    "duration_minutes": 8,
+    "logged_by": "Murugan K.",
+    "created_at": "2026-11-01T10:15:00Z"
+  }
+]

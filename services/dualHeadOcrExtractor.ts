@@ -437,16 +437,13 @@ export function applyTextFallback(
       variants.push(match[0]);
     }
   }
+  // If variant detected from screen
   if (variants.length >= 2) {
     headA.productVariant = variants[0].toLowerCase();
     headB.productVariant = variants[1].toUpperCase();
   } else if (variants.length === 1) {
     headA.productVariant = variants[0];
   }
-
-  // Default fallback variants if screen had no variant label
-  if (!headA.productVariant) headA.productVariant = "1000ml";
-  if (!headB.productVariant) headB.productVariant = "500ML";
 
   // 8. Extract Dual-Head Counters: Production and Wastage
   // Search for the sequence of counter numbers following the PRODUCTION/WASTAGE labels

@@ -30,6 +30,8 @@ wastage_store = JsonStorage(os.path.join(DATA_ROOT, "config", "wastage.json"), i
 dispatch_store = JsonStorage(os.path.join(DATA_ROOT, "config", "dispatch.json"), id_field="id")
 milk_balance_store = JsonStorage(os.path.join(DATA_ROOT, "config", "milk_balance.json"), id_field="id")
 calibrations_store = JsonStorage(os.path.join(DATA_ROOT, "config", "calibrations.json"), id_field="id")
+shift_handovers_store = JsonStorage(os.path.join(DATA_ROOT, "config", "shift_handovers.json"), id_field="id")
+downtime_store = JsonStorage(os.path.join(DATA_ROOT, "config", "downtime_logs.json"), id_field="id")
 
 # Append-only ledgers
 readings_stream = JsonStreamStorage(os.path.join(DATA_ROOT, "readings", "readings_stream.jsonl"))

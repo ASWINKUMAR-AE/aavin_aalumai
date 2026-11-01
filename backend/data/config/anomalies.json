@@ -86,5 +86,71 @@
     "description": "Identical HMI image SHA-256 (15ed5f3bd90db535...) was previously uploaded under evidence ID d9e26c8c-a8e0-4b0f-920f-ae37c82b0e48.",
     "detection_time": "2026-11-01T10:09:23.975003+00:00",
     "status": "active"
+  },
+  {
+    "id": "ANOM-20261101-D27F2E",
+    "machine_id": "3518d200-38ee-4020-bb7e-a007f0711f92",
+    "head_id": null,
+    "reading_id": null,
+    "anomaly_type": "duplicate_image",
+    "severity": "High",
+    "description": "Identical HMI image SHA-256 (5e3bdacdc5940574...) was previously uploaded under evidence ID 2ada6099-2999-4fb1-9557-93d74361fb15.",
+    "detection_time": "2026-11-01T10:32:59.945617+00:00",
+    "status": "active"
+  },
+  {
+    "id": "ANOM-20261101-00119F",
+    "machine_id": "3518d200-38ee-4020-bb7e-a007f0711f92",
+    "head_id": null,
+    "reading_id": null,
+    "anomaly_type": "duplicate_image",
+    "severity": "High",
+    "description": "Identical HMI image SHA-256 (a31837890a908ed6...) was previously uploaded under evidence ID 74d10174-29a0-4654-89e5-fb0aa201cea3.",
+    "detection_time": "2026-11-01T10:32:59.987182+00:00",
+    "status": "active"
+  },
+  {
+    "id": "ANOM-20261101-FA43E1",
+    "machine_id": "3518d200-38ee-4020-bb7e-a007f0711f92",
+    "head_id": null,
+    "reading_id": null,
+    "anomaly_type": "duplicate_image",
+    "severity": "High",
+    "description": "Identical HMI image SHA-256 (a31837890a908ed6...) was previously uploaded under evidence ID 74d10174-29a0-4654-89e5-fb0aa201cea3.",
+    "detection_time": "2026-11-01T10:33:00.045875+00:00",
+    "status": "active"
+  },
+  {
+    "id": "ANOM-20261101-71F090",
+    "machine_id": "3518d200-38ee-4020-bb7e-a007f0711f92",
+    "head_id": null,
+    "reading_id": null,
+    "anomaly_type": "duplicate_image",
+    "severity": "High",
+    "description": "Identical HMI image SHA-256 (c9c7ad36dbcc2c79...) was previously uploaded under evidence ID ad30397a-5ab5-4f68-9372-152e09f18101.",
+    "detection_time": "2026-11-01T10:33:00.113531+00:00",
+    "status": "active"
+  },
+  {
+    "id": "ANOM-20261101-7EE454",
+    "machine_id": "3518d200-38ee-4020-bb7e-a007f0711f92",
+    "head_id": "122e2a21-76dc-4e03-88db-a20a732e9ac1",
+    "reading_id": null,
+    "anomaly_type": "ocr_mismatch",
+    "severity": "Medium",
+    "description": "Worker confirmed count 376761 differs from OCR extracted value 376760",
+    "detection_time": "2026-11-01T10:33:00.306294+00:00",
+    "status": "active"
+  },
+  {
+    "id": "ANOM-20261101-B187B8",
+    "machine_id": "3518d200-38ee-4020-bb7e-a007f0711f92",
+    "head_id": null,
+    "reading_id": null,
+    "anomaly_type": "duplicate_image",
+    "severity": "High",
+    "description": "Identical HMI image SHA-256 (15ed5f3bd90db535...) was previously uploaded under evidence ID d9e26c8c-a8e0-4b0f-920f-ae37c82b0e48.",
+    "detection_time": "2026-11-01T10:33:00.376153+00:00",
+    "status": "active"
   }
 ]

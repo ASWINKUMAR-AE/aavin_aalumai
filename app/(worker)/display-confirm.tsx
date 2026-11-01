@@ -75,65 +75,41 @@ export default function MachineDisplayConfirmScreen() {
       // Auto-enter Head A counts and parameters from OCR response
       if (result.headA.productionCounter !== null) {
         setHeadAProd(String(result.headA.productionCounter));
-      } else {
-        setHeadAProd("229910");
       }
       if (result.headA.wastageCounter !== null) {
         setHeadAWaste(String(result.headA.wastageCounter));
-      } else {
-        setHeadAWaste("1212");
       }
       if (result.headA.productVariant) {
         setHeadAVariant(result.headA.productVariant);
-      } else {
-        setHeadAVariant("1000ml");
       }
       if (result.headA.recipeNumber !== null) {
         setHeadARecipe(String(result.headA.recipeNumber));
-      } else {
-        setHeadARecipe("3");
       }
       if (result.headA.machineSpeed !== null) {
         setHeadASpeed(String(result.headA.machineSpeed));
-      } else {
-        setHeadASpeed("50");
       }
       if (result.headA.feedTime) {
         setHeadAFeedTime(result.headA.feedTime);
-      } else {
-        setHeadAFeedTime("0.10");
       }
 
       // Auto-enter Head B counts and parameters from OCR response
       if (result.headB.productionCounter !== null) {
         setHeadBProd(String(result.headB.productionCounter));
-      } else {
-        setHeadBProd("376761");
       }
       if (result.headB.wastageCounter !== null) {
         setHeadBWaste(String(result.headB.wastageCounter));
-      } else {
-        setHeadBWaste("2491");
       }
       if (result.headB.productVariant) {
         setHeadBVariant(result.headB.productVariant);
-      } else {
-        setHeadBVariant("500ML");
       }
       if (result.headB.recipeNumber !== null) {
         setHeadBRecipe(String(result.headB.recipeNumber));
-      } else {
-        setHeadBRecipe("2");
       }
       if (result.headB.machineSpeed !== null) {
         setHeadBSpeed(String(result.headB.machineSpeed));
-      } else {
-        setHeadBSpeed("65");
       }
       if (result.headB.feedTime) {
         setHeadBFeedTime(result.headB.feedTime);
-      } else {
-        setHeadBFeedTime("0.10");
       }
 
       setOcrAutoFilled(true);

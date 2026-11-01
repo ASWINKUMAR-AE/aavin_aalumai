@@ -421,3 +421,53 @@ class MachineDisplayEvidenceResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+
+# Operational Handover & Interruption Schemas
+class ShiftHandoverRequest(BaseModel):
+    shift_id: str
+    shift_name: str
+    outgoing_supervisor_id: Optional[str] = None
+    incoming_supervisor_id: Optional[str] = None
+    handover_notes: str
+    missing_heads_acknowledged: List[str] = []
+    active_anomalies_reviewed: bool = True
+
+
+class ShiftHandoverResponse(BaseModel):
+    id: str
+    shift_id: str
+    shift_name: str
+    handover_time: datetime
+    outgoing_supervisor: str
+    incoming_supervisor: str
+    completed_heads_count: int
+    missing_heads_count: int
+    missing_head_codes: List[str]
+    total_shift_production: int
+    total_shift_wastage: int
+    active_anomalies_count: int
+    handover_notes: str
+    status: str
+
+
+class DowntimeLogRequest(BaseModel):
+    machine_id: str
+    head_id: Optional[str] = None
+    interruption_type: str  # film_roll_replacement, seal_failure, no_milk_supply, maintenance
+    reason: str
+    duration_minutes: int
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+
+
+class DowntimeLogResponse(BaseModel):
+    id: str
+    machine_id: str
+    machine_code: str
+    head_id: Optional[str] = None
+    interruption_type: str
+    reason: str
+    duration_minutes: int
+    logged_by: str
+    created_at: datetime

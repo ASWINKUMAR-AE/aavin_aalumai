@@ -123,3 +123,39 @@ def generate_daily_anchor(
         "manifest_hash": manifest_hash,
         "heads_anchored": len(heads)
     }
+
+# 4. Disaster Recovery & Snapshot Management
+from app.services.backup_service import BackupService
+
+@router.post("/backups")
+def trigger_backup(
+    notes: Optional[str] = "Manual admin snapshot",
+    payload: dict = Depends(require_permission("user.manage"))
+):
+    actor_id = payload.get("sub", "admin")
+    return BackupService.create_backup(actor_id=actor_id, notes=notes or "Manual snapshot")
+
+@router.get("/backups")
+def get_backups(
+    payload: dict = Depends(require_permission("user.manage"))
+):
+    return BackupService.list_backups()
+
+@router.get("/backups/{filename}/verify")
+def verify_backup_integrity(
+    filename: str,
+    payload: dict = Depends(require_permission("user.manage"))
+):
+    return BackupService.verify_backup(filename)
+
+@router.post("/backups/{filename}/restore")
+def restore_backup(
+    filename: str,
+    payload: dict = Depends(require_permission("user.manage"))
+):
+    actor_id = payload.get("sub", "admin")
+    try:
+        return BackupService.restore_backup(filename, actor_id=actor_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
