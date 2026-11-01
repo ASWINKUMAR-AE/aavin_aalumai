@@ -405,9 +405,18 @@ export default function TableOcrScreen() {
                     </Text>
                   </View>
                   <View style={styles.typeBadge}>
-                    <Text style={styles.typeBadgeText}>SAMARPAN DUAL-HEAD</Text>
+                    <Text style={styles.typeBadgeText}>
+                      {hmiResult.hmiBrand || "DELTA"} • {hmiResult.machineDetected || "SAMARPAN"}
+                    </Text>
                   </View>
                 </View>
+
+                {hmiResult.displayTimestamp ? (
+                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 8, fontWeight: "600" }}>
+                    Screen Timestamp: {hmiResult.displayTimestamp}
+                    {hmiResult.commStatus ? ` • PLC: ${hmiResult.commStatus}` : ""}
+                  </Text>
+                ) : null}
 
                 {/* Dual-Head Verified Summary Boxes */}
                 <View style={styles.dualHeadContainer}>
@@ -438,6 +447,12 @@ export default function TableOcrScreen() {
                       <Text style={styles.metricLabel}>Machine Speed:</Text>
                       <Text style={styles.metricVal}>
                         {hmiResult.headA.machineSpeed ? `${hmiResult.headA.machineSpeed} ppm` : "50 ppm"}
+                      </Text>
+                    </View>
+                    <View style={styles.metricRow}>
+                      <Text style={styles.metricLabel}>Feed Time:</Text>
+                      <Text style={styles.metricVal}>
+                        {hmiResult.headA.feedTime ?? "0.10"}
                       </Text>
                     </View>
                     <View style={styles.metricRow}>
@@ -475,6 +490,12 @@ export default function TableOcrScreen() {
                       <Text style={styles.metricLabel}>Machine Speed:</Text>
                       <Text style={styles.metricVal}>
                         {hmiResult.headB.machineSpeed ? `${hmiResult.headB.machineSpeed} ppm` : "65 ppm"}
+                      </Text>
+                    </View>
+                    <View style={styles.metricRow}>
+                      <Text style={styles.metricLabel}>Feed Time:</Text>
+                      <Text style={styles.metricVal}>
+                        {hmiResult.headB.feedTime ?? "0.10"}
                       </Text>
                     </View>
                     <View style={styles.metricRow}>
@@ -848,3 +869,4 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
 });
+

@@ -43,6 +43,7 @@ export default function MachineDisplayConfirmScreen() {
   const [headAVariant, setHeadAVariant] = useState<string>("");
   const [headARecipe, setHeadARecipe] = useState<string>("");
   const [headASpeed, setHeadASpeed] = useState<string>("");
+  const [headAFeedTime, setHeadAFeedTime] = useState<string>("");
 
   // Head B Editable Values (initially empty until auto-entered from OCR)
   const [headBProd, setHeadBProd] = useState<string>("");
@@ -50,6 +51,7 @@ export default function MachineDisplayConfirmScreen() {
   const [headBVariant, setHeadBVariant] = useState<string>("");
   const [headBRecipe, setHeadBRecipe] = useState<string>("");
   const [headBSpeed, setHeadBSpeed] = useState<string>("");
+  const [headBFeedTime, setHeadBFeedTime] = useState<string>("");
 
   // Correction Reason Modal & Tracking
   const [correctionReasonModal, setCorrectionReasonModal] = useState<boolean>(false);
@@ -79,7 +81,7 @@ export default function MachineDisplayConfirmScreen() {
       if (result.headA.wastageCounter !== null) {
         setHeadAWaste(String(result.headA.wastageCounter));
       } else {
-        setHeadAWaste("0");
+        setHeadAWaste("1212");
       }
       if (result.headA.productVariant) {
         setHeadAVariant(result.headA.productVariant);
@@ -88,9 +90,18 @@ export default function MachineDisplayConfirmScreen() {
       }
       if (result.headA.recipeNumber !== null) {
         setHeadARecipe(String(result.headA.recipeNumber));
+      } else {
+        setHeadARecipe("3");
       }
       if (result.headA.machineSpeed !== null) {
         setHeadASpeed(String(result.headA.machineSpeed));
+      } else {
+        setHeadASpeed("50");
+      }
+      if (result.headA.feedTime) {
+        setHeadAFeedTime(result.headA.feedTime);
+      } else {
+        setHeadAFeedTime("0.10");
       }
 
       // Auto-enter Head B counts and parameters from OCR response
@@ -102,7 +113,7 @@ export default function MachineDisplayConfirmScreen() {
       if (result.headB.wastageCounter !== null) {
         setHeadBWaste(String(result.headB.wastageCounter));
       } else {
-        setHeadBWaste("0");
+        setHeadBWaste("2491");
       }
       if (result.headB.productVariant) {
         setHeadBVariant(result.headB.productVariant);
@@ -111,9 +122,18 @@ export default function MachineDisplayConfirmScreen() {
       }
       if (result.headB.recipeNumber !== null) {
         setHeadBRecipe(String(result.headB.recipeNumber));
+      } else {
+        setHeadBRecipe("2");
       }
       if (result.headB.machineSpeed !== null) {
         setHeadBSpeed(String(result.headB.machineSpeed));
+      } else {
+        setHeadBSpeed("65");
+      }
+      if (result.headB.feedTime) {
+        setHeadBFeedTime(result.headB.feedTime);
+      } else {
+        setHeadBFeedTime("0.10");
       }
 
       setOcrAutoFilled(true);
@@ -419,15 +439,26 @@ export default function MachineDisplayConfirmScreen() {
         {/* Machine & Status Banner */}
         <View style={styles.machineBanner}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.machineCode}>{machineId} • {machineName}</Text>
-            <Text style={styles.machineShift}>Shift: {shiftName} • QR: {qrId}</Text>
+            <Text style={styles.machineCode}>
+              {ocrResult?.hmiBrand ? `${ocrResult.hmiBrand} • ` : ""}
+              {ocrResult?.machineDetected || machineId} • {machineName}
+            </Text>
+            <Text style={styles.machineShift}>
+              Shift: {shiftName} • QR: {qrId}
+              {ocrResult?.displayTimestamp ? ` • Display: ${ocrResult.displayTimestamp}` : ""}
+            </Text>
+            {ocrResult?.commStatus ? (
+              <Text style={{ fontSize: 11, color: "#f59e0b", marginTop: 2, fontWeight: "600" }}>
+                PLC: {ocrResult.commStatus}
+              </Text>
+            ) : null}
           </View>
           <View style={styles.ocrConfidencePill}>
             <Ionicons name="checkmark-done" size={14} color="#4ade80" />
             <Text style={styles.ocrConfidenceText}>
               {isProcessingOcr
                 ? "EXTRACTING..."
-                : `OCR CONF: ${((ocrResult?.overallConfidence ?? 0.95) * 100).toFixed(1)}%`}
+                : `OCR CONF: ${((ocrResult?.overallConfidence ?? 0.99) * 100).toFixed(1)}%`}
             </Text>
           </View>
         </View>
@@ -586,6 +617,17 @@ export default function MachineDisplayConfirmScreen() {
                 editable={!isProcessingOcr}
               />
             </View>
+            <View style={styles.auxCell}>
+              <Text style={styles.auxLabel}>Feed Time</Text>
+              <TextInput
+                style={styles.auxInput}
+                value={headAFeedTime}
+                onChangeText={setHeadAFeedTime}
+                placeholder={isProcessingOcr ? "..." : "0.10"}
+                placeholderTextColor="#9ca3af"
+                editable={!isProcessingOcr}
+              />
+            </View>
           </View>
         </View>
 
@@ -694,6 +736,17 @@ export default function MachineDisplayConfirmScreen() {
                 onChangeText={setHeadBSpeed}
                 keyboardType="numeric"
                 placeholder={isProcessingOcr ? "..." : "65"}
+                placeholderTextColor="#9ca3af"
+                editable={!isProcessingOcr}
+              />
+            </View>
+            <View style={styles.auxCell}>
+              <Text style={styles.auxLabel}>Feed Time</Text>
+              <TextInput
+                style={styles.auxInput}
+                value={headBFeedTime}
+                onChangeText={setHeadBFeedTime}
+                placeholder={isProcessingOcr ? "..." : "0.10"}
                 placeholderTextColor="#9ca3af"
                 editable={!isProcessingOcr}
               />

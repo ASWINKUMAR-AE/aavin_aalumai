@@ -53,3 +53,89 @@ def test_auto_enter_fields_from_aavin_abstract_table():
     assert result["aavin_abstract"]["products"][0]["product_name"] == "COW MILK 500 ML"
     assert result["aavin_abstract"]["products"][0]["qty_packets"] == 60491
     assert result["aavin_abstract"]["products"][0]["qty_litres"] == 30245.750
+
+
+def test_parse_hmi_display_text_live_stream():
+    from app.services.ocr_table_parser import parse_hmi_display_text
+
+    raw_stream = """OAELTA
+START
+HEAD - A
+SAMARPAN
+HEAD - B
+MACHINESPEED
+MACHINESPEED
+START
+SET
+50
+SET
+65
+HOME
+ACTUAL
+0
+ACTUAL
+0
+HOME
+SEALER
+ON
+FEED TIME
+0.10
+FEED TIME
+0.10
+SEALER
+RECIPE No.
+3
+RECIPE No.
+2
+ON
+PULLER
+OFF
+1000rnl
+500ML
+PULLER
+PRODUCTION
+WASTAGE
+PRODUCTION
+OFF
+FEEDER
+WASTAGE
+OFF
+229910
+1212
+376761
+2491
+FEEDER
+OFF
+SELECTION
+SETTINGS
+MANUAL MODE
+ADV. SETTINGS
+CoM 3 Station 1: Communication Error 3
+Dsp
+HEAD -'A
+18/10/2026 07:31"""
+
+    res = parse_hmi_display_text(raw_stream)
+    assert res["success"] is True
+    assert res["machine_detected"] == "SAMARPAN"
+    assert res["hmi_brand"] == "DELTA"
+    assert res["display_timestamp"] == "18/10/2026 07:31"
+    assert "Communication Error 3" in res["comm_status"]
+
+    # Head A
+    assert res["head_a"]["production_counter"] == 229910
+    assert res["head_a"]["wastage_counter"] == 1212
+    assert res["head_a"]["product_variant"] == "1000ml"
+    assert res["head_a"]["machine_speed"] == 50
+    assert res["head_a"]["feed_time"] == "0.10"
+    assert res["head_a"]["recipe_number"] == 3
+
+    # Head B
+    assert res["head_b"]["production_counter"] == 376761
+    assert res["head_b"]["wastage_counter"] == 2491
+    assert res["head_b"]["product_variant"] == "500ML"
+    assert res["head_b"]["machine_speed"] == 65
+    assert res["head_b"]["feed_time"] == "0.10"
+    assert res["head_b"]["recipe_number"] == 2
+
+
