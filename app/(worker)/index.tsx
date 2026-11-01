@@ -164,10 +164,18 @@ export default function WorkerHomeScreen() {
 
           <TouchableOpacity
             style={styles.secondaryActionBtn}
+            onPress={() => router.push("/(worker)/table-ocr")}
+          >
+            <Ionicons name="grid-outline" size={20} color="#0284c7" />
+            <Text style={styles.secondaryActionText}>Table OCR</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryActionBtn}
             onPress={() => router.push("/(worker)/reset-request")}
           >
             <Ionicons name="refresh-circle-outline" size={20} color={Colors.secondary} />
-            <Text style={styles.secondaryActionText}>Reset Request</Text>
+            <Text style={styles.secondaryActionText}>Reset Req</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

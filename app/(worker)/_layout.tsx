@@ -102,6 +102,24 @@ export default function WorkerLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="display-capture"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="display-confirm"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="table-ocr"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

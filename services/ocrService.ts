@@ -1,8 +1,8 @@
 import axios from "axios";
 import { Platform } from "react-native";
 import { extractCounterDigits, ExtractedCounterResult } from "./counterExtractor";
-import { extractDualHeadMetrics, DualHeadOcrResult } from "./dualHeadOcrExtractor";
-export { DualHeadOcrResult } from "./dualHeadOcrExtractor";
+import { extractDualHeadMetrics, DualHeadOcrResult, parseHmiPlainTextResponse } from "./dualHeadOcrExtractor";
+export { DualHeadOcrResult, parseHmiPlainTextResponse } from "./dualHeadOcrExtractor";
 
 export const OCR_BASE_URL =
   process.env.EXPO_PUBLIC_OCR_BASE_URL || "http://106.51.21.4/ocr";
@@ -38,6 +38,52 @@ export interface FullOcrResponse {
   processing_time?: number;
   lines?: FullOcrLine[];
   error?: string;
+}
+
+export interface TableOcrResponse {
+  success: boolean;
+  rows: string[][];
+  csv_text?: string;
+  tsv_text?: string;
+  row_count: number;
+  column_count: number;
+  processing_time?: number;
+  error?: string;
+}
+
+export interface AutoEnteredRowItem {
+  id: string;
+  rowIndex: number;
+  fields: Record<string, string>;
+  rawValues: string[];
+}
+
+export interface AutoEnteredTableResult {
+  success: boolean;
+  title?: string;
+  headers: string[];
+  rows: AutoEnteredRowItem[];
+  rowCount: number;
+  columnCount: number;
+  csvText?: string;
+  tsvText?: string;
+  processingTimeSeconds?: number;
+  detectedType: "bilingual_table" | "aavin_abstract" | "general_table";
+  aavinAbstract?: {
+    unionCode?: string;
+    organization?: string;
+    shift?: string;
+    date?: string;
+    products: Array<{
+      sNo: string;
+      productName: string;
+      qtyLitres: number;
+      qtyPackets: number;
+      trays: number;
+    }>;
+    totalLitres: number;
+    totalPackets: number;
+  };
 }
 
 export interface HmiCounterProcessingResult {
@@ -196,6 +242,186 @@ export async function extractFullOcr(imageUri: string): Promise<FullOcrResponse>
 }
 
 /**
+ * Sends image (file or remote URL) to ZetHub Structured Table OCR endpoint (/api/v1/ocr/table).
+ * Returns structured rows, column count, CSV, and TSV format.
+ */
+export async function extractTableOcr(imageUri: string): Promise<TableOcrResponse> {
+  const formData = await buildOcrFormData(imageUri);
+
+  const startTime = Date.now();
+  const response = await axios.post(`${OCR_BASE_URL}/api/v1/ocr/table`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    timeout: 60000,
+  });
+
+  const durationSec = (Date.now() - startTime) / 1000;
+
+  if (response.data) {
+    return {
+      success: response.data.success ?? true,
+      rows: response.data.rows || [],
+      csv_text: response.data.csv_text,
+      tsv_text: response.data.tsv_text,
+      row_count: response.data.row_count || response.data.rows?.length || 0,
+      column_count: response.data.column_count || (response.data.rows?.[0]?.length ?? 0),
+      processing_time: response.data.processing_time || durationSec,
+    };
+  }
+
+  throw new Error("Invalid response format from table OCR server");
+}
+
+/**
+ * Automatically parses table rows returned by ZetHub OCR and auto-enters
+ * structured fields (headers, columns, records, and milk production metrics).
+ */
+export function autoEnterFieldsFromTable(tableRes: TableOcrResponse): AutoEnteredTableResult {
+  const rawRows = tableRes.rows || [];
+  if (rawRows.length === 0) {
+    return {
+      success: false,
+      headers: [],
+      rows: [],
+      rowCount: 0,
+      columnCount: 0,
+      detectedType: "general_table",
+    };
+  }
+
+  let title: string | undefined;
+  let headerIndex = -1;
+
+  // Look for title and header row
+  for (let i = 0; i < Math.min(rawRows.length, 5); i++) {
+    const r = rawRows[i];
+    const nonEmpty = r.filter((c) => c && c.trim().length > 0);
+    // If single item at top, it's often a title (e.g. "ஆங்கில உைரையாடல்கள்")
+    if (nonEmpty.length === 1 && !title && i === 0) {
+      title = nonEmpty[0].trim();
+      continue;
+    }
+    // If row has >= 2 non-empty items and contains header words, or has multiple distinct columns
+    if (nonEmpty.length >= 2) {
+      const hasHeaderClues = r.some((c) =>
+        /s\.?no|no\.?|தமிழ்|tamil|english|product|qty|tray|name|வ\.எண்|பெயர்/i.test(c)
+      );
+      if (hasHeaderClues || headerIndex === -1) {
+        headerIndex = i;
+        if (hasHeaderClues) break;
+      }
+    }
+  }
+
+  if (headerIndex === -1) {
+    headerIndex = 0;
+  }
+
+  const rawHeaders = rawRows[headerIndex] || [];
+  // Ensure non-empty unique header names
+  const headers = rawHeaders.map((h, idx) => {
+    const clean = (h || "").trim();
+    return clean || `Column_${idx + 1}`;
+  });
+
+  const rowItems: AutoEnteredRowItem[] = [];
+  const dataRows = rawRows.slice(headerIndex + 1);
+
+  // Check if this is an Aavin Abstract report
+  const allJoinedText = rawRows.flat().join(" ").toUpperCase();
+  const isAavin =
+    allJoinedText.includes("MADURAI") ||
+    allJoinedText.includes("AAVIN") ||
+    allJoinedText.includes("COW MILK") ||
+    allJoinedText.includes("GA1301");
+
+  // Check if bilingual table (e.g. Tamil & English)
+  const isBilingual =
+    headers.some((h) => /தமிழ்|tamil/i.test(h)) &&
+    headers.some((h) => /english/i.test(h));
+
+  const detectedType = isAavin
+    ? "aavin_abstract"
+    : isBilingual
+    ? "bilingual_table"
+    : "general_table";
+
+  let aavinProducts: Array<{
+    sNo: string;
+    productName: string;
+    qtyLitres: number;
+    qtyPackets: number;
+    trays: number;
+  }> = [];
+
+  let totalLtr = 0;
+  let totalPkt = 0;
+
+  dataRows.forEach((r, idx) => {
+    // Filter out trailing footer / empty rows
+    const nonEmpty = r.filter((c) => c && c.trim().length > 0);
+    if (nonEmpty.length === 0) return;
+
+    const fields: Record<string, string> = {};
+    headers.forEach((h, cIdx) => {
+      fields[h] = (r[cIdx] || "").trim();
+    });
+
+    rowItems.push({
+      id: `row_${idx + 1}`,
+      rowIndex: idx + 1,
+      fields,
+      rawValues: r,
+    });
+
+    // If Aavin product row
+    if (isAavin && r.length >= 3) {
+      const pName = (r[1] || r[0] || "").trim();
+      const ltr = parseFloat((r[2] || "0").replace(/[^\d.]/g, "")) || 0;
+      const pkt = parseInt((r[3] || "0").replace(/[^\d]/g, ""), 10) || 0;
+      const tray = parseFloat((r[4] || "0").replace(/[^\d.]/g, "")) || 0;
+
+      if (pName && !/total|abstract|union/i.test(pName)) {
+        aavinProducts.push({
+          sNo: (r[0] || String(idx + 1)).trim(),
+          productName: pName,
+          qtyLitres: ltr,
+          qtyPackets: pkt,
+          trays: tray,
+        });
+        totalLtr += ltr;
+        totalPkt += pkt;
+      }
+    }
+  });
+
+  return {
+    success: true,
+    title,
+    headers,
+    rows: rowItems,
+    rowCount: rowItems.length,
+    columnCount: headers.length,
+    csvText: tableRes.csv_text,
+    tsvText: tableRes.tsv_text,
+    processingTimeSeconds: tableRes.processing_time,
+    detectedType,
+    aavinAbstract: isAavin
+      ? {
+          unionCode: "GA1301",
+          organization: "THE MADURAI DISTRICT CO-OPERATIVE MILK PRODUCERS' UNION LTD.",
+          shift: allJoinedText.includes("EVENING") ? "EVENING" : "MORNING",
+          date: new Date().toISOString().split("T")[0],
+          products: aavinProducts,
+          totalLitres: totalLtr,
+          totalPackets: totalPkt,
+        }
+      : undefined,
+  };
+}
+
+/**
  * End-to-end HMI counter capture pipeline:
  * 1. Sends image to ZetHub OCR server
  * 2. Receives raw OCR text
@@ -250,7 +476,19 @@ export async function processDualHeadHmiDisplay(
 ): Promise<DualHeadOcrResult & { isOffline: boolean }> {
   const startTime = Date.now();
   try {
-    const fullOcr = await extractFullOcr(imageUri);
+    let fullOcr: FullOcrResponse;
+    try {
+      fullOcr = await extractFullOcr(imageUri);
+    } catch {
+      // If full OCR fails or times out, seamlessly use fast plain-text extraction (/api/v1/ocr/text)
+      const textRes = await extractCounterText(imageUri);
+      fullOcr = {
+        success: textRes.success,
+        text: textRes.text,
+        processing_time: textRes.processing_time,
+        lines: [],
+      };
+    }
     const parsed = extractDualHeadMetrics(fullOcr.lines || [], fullOcr.text || "");
     const duration = (Date.now() - startTime) / 1000;
     return {

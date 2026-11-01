@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, date
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.permissions import get_current_user_payload, require_permission
@@ -8,6 +8,10 @@ from app.models.operations import WastageEntry, DispatchEntry, MilkBalanceEntry,
 from app.schemas.schemas import (
     WastageCreateRequest, WastageResponse,
     DispatchCreateRequest, MilkBalanceCreateRequest, CalibrationAuditCreate
+)
+from app.services.ocr_table_parser import (
+    extract_table_from_zethub_ocr,
+    auto_enter_fields_from_table_rows,
 )
 
 router = APIRouter(prefix="/operations", tags=["Operations & Audits"])
@@ -164,3 +168,37 @@ def list_calibrations(db: Session = Depends(get_db), payload: dict = Depends(get
 @router.get("/unannounced-audits")
 def list_unannounced_audits(db: Session = Depends(get_db), payload: dict = Depends(get_current_user_payload)):
     return db.query(UnannouncedAudit).all()
+
+# 5. Table OCR & Field Auto-Entry
+@router.post("/ocr/table")
+async def process_table_ocr(
+    file: Optional[UploadFile] = File(None),
+    image_url: Optional[str] = Form(None),
+    payload: dict = Depends(get_current_user_payload)
+):
+    """
+    Submits a table document image (or image_url) to the ZetHub Table OCR engine,
+    and returns auto-entered fields, rows, and structured headers.
+    """
+    if not file and not image_url:
+        raise HTTPException(status_code=400, detail="Must provide either 'file' or 'image_url'")
+
+    image_bytes = None
+    filename = "table.jpg"
+    content_type = "image/jpeg"
+    if file:
+        image_bytes = await file.read()
+        filename = file.filename or "table.jpg"
+        content_type = file.content_type or "image/jpeg"
+
+    try:
+        table_raw = await extract_table_from_zethub_ocr(
+            image_bytes=image_bytes,
+            filename=filename,
+            content_type=content_type,
+            image_url=image_url
+        )
+        parsed = auto_enter_fields_from_table_rows(table_raw)
+        return parsed
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Table OCR failed: {str(e)}")
