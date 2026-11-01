@@ -130,3 +130,4 @@ def test_evidence_storage_sha256_verification():
         )
         assert dup_entry["is_duplicate"] is True
         assert dup_entry["verification_status"] == "duplicate_flagged"
+

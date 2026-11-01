@@ -130,3 +130,4 @@ class EvidenceStorage:
 
     def list_evidence(self, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         return self.manifest_stream.read_stream(limit=limit, offset=offset, reverse=True)
+

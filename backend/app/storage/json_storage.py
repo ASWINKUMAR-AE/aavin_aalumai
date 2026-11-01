@@ -220,3 +220,4 @@ class JsonStreamStorage(BaseStreamStorage):
                         except json.JSONDecodeError:
                             pass
             return cnt
+

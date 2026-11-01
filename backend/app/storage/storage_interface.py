@@ -43,3 +43,4 @@ class BaseStreamStorage(ABC):
     def read_stream(self, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
         """Reads events from the append-only log stream in chronological or reverse order."""
         pass
+
