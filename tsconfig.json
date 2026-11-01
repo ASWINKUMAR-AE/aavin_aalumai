@@ -10,10 +10,14 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
   ],
   "exclude": [
     "backend",
+    "dashboard",
+    "legacy_cattle_passport",
     "node_modules"
   ]
 }

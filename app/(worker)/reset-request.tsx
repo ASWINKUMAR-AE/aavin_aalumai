@@ -70,7 +70,7 @@ export default function ResetRequestScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Notice Card */}
         <View style={styles.noticeCard}>
-          <Ionicons name="shield-alert" size={20} color={Colors.warning} />
+          <Ionicons name="alert-circle" size={20} color={Colors.warning} />
           <Text style={styles.noticeText}>
             Critical Rule: Manual reset requires both Before and After HMI photographs and personal Supervisor witness authentication.
           </Text>

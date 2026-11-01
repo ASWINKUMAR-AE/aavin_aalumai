@@ -45,8 +45,6 @@
           "cameraPermission": "Allow Aavin Aalumai to scan machine QR codes and capture physical HMI counter displays."
         }
       ],
-      "expo-font",
-      "expo-image",
       "expo-secure-store"
     ],
     "experiments": {
