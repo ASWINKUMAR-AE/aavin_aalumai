@@ -280,3 +280,4 @@ function applyTextFallback(
     headB.confidence = 0.82;
   }
 }
+

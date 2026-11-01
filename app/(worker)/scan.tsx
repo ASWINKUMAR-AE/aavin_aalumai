@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,12 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
+import * as Haptics from "expo-haptics";
 import { Colors } from "../../constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { apiClient } from "../../services/api";
@@ -27,10 +30,35 @@ const PRIMARY_MACHINES = [
 export default function MachineQrScannerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [torch, setTorch] = useState(false);
-  const [selectedMachine, setSelectedMachine] = useState(PRIMARY_MACHINES[0]);
-  const [isValidating, setIsValidating] = useState(false);
-  const isCooldownRef = useRef(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [torch, setTorch] = useState<boolean>(false);
+  const [scanned, setScanned] = useState<boolean>(false);
+  const [selectedMachine, setSelectedMachine] = useState(PRIMARY_MACHINES[2]); // Default Samarpan SMP-01
+  const [isValidating, setIsValidating] = useState<boolean>(false);
+  const [scannedFeedback, setScannedFeedback] = useState<string | null>(null);
+  const isCooldownRef = useRef<boolean>(false);
+
+  // Automatically request camera permission when screen opens
+  useEffect(() => {
+    if (!permission?.granted) {
+      requestPermission();
+    }
+  }, [permission]);
+
+  // Handle automatic QR scan from live camera
+  const handleBarcodeScanned = (result: BarcodeScanningResult) => {
+    if (scanned || isCooldownRef.current || !result.data) return;
+    setScanned(true);
+
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      // Haptics fallback
+    }
+
+    setScannedFeedback(`Scanned QR: ${result.data.substring(0, 30)}...`);
+    handleProcessMachineQr(result.data);
+  };
 
   const handleProcessMachineQr = async (qrPayloadString: string) => {
     if (isCooldownRef.current) return;
@@ -43,6 +71,7 @@ export default function MachineQrScannerScreen() {
       });
 
       if (res.data && res.data.valid) {
+        // Successfully validated machine QR -> navigate immediately to Machine Display Capture
         router.push({
           pathname: "/(worker)/display-capture",
           params: {
@@ -50,27 +79,39 @@ export default function MachineQrScannerScreen() {
             qrId: res.data.qr_id,
             machineName: res.data.machine_name,
             machineType: res.data.machine_type,
+            shiftName: "Shift 1 (Morning)",
           },
         });
       } else {
-        Alert.alert("QR Validation Failed", res.data?.error || "Unrecognized machine QR code.");
+        Alert.alert(
+          "Unregistered QR Code",
+          res.data?.error || "This QR code is not registered to an active packaging machine.",
+          [{ text: "Try Again", onPress: () => setScanned(false) }]
+        );
       }
     } catch (err: any) {
-      // Local fallback navigation for offline floor use
+      // Offline floor fallback: determine machine from raw QR text or fallback selection
+      const matchedMachine = PRIMARY_MACHINES.find(
+        (m) => qrPayloadString.includes(m.machineId) || qrPayloadString.includes(m.qrId)
+      ) || selectedMachine;
+
       router.push({
         pathname: "/(worker)/display-capture",
         params: {
-          machineId: selectedMachine.machineId,
-          qrId: selectedMachine.qrId,
-          machineName: selectedMachine.name,
-          machineType: selectedMachine.type,
+          machineId: matchedMachine.machineId,
+          qrId: matchedMachine.qrId,
+          machineName: matchedMachine.name,
+          machineType: matchedMachine.type,
+          shiftName: "Shift 1 (Morning)",
         },
       });
     } finally {
       setIsValidating(false);
       setTimeout(() => {
         isCooldownRef.current = false;
-      }, 1500);
+        setScanned(false);
+        setScannedFeedback(null);
+      }, 2000);
     }
   };
 
@@ -93,7 +134,7 @@ export default function MachineQrScannerScreen() {
         </TouchableOpacity>
         <View style={styles.titleContainer}>
           <Text style={styles.topBarTitle}>Scan Machine QR</Text>
-          <Text style={styles.topBarSub}>Step 1: Identify Milk Pouch Machine</Text>
+          <Text style={styles.topBarSub}>Live Camera Scanner</Text>
         </View>
         <TouchableOpacity
           onPress={() => setTorch(!torch)}
@@ -104,8 +145,31 @@ export default function MachineQrScannerScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Camera Viewfinder Area */}
+      {/* Camera Live Viewfinder Area */}
       <View style={styles.cameraBox}>
+        {permission && permission.granted ? (
+          <CameraView
+            style={StyleSheet.absoluteFillObject}
+            facing="back"
+            enableTorch={torch}
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+            onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+          />
+        ) : (
+          <View style={styles.permissionContainer}>
+            <Ionicons name="camera-outline" size={54} color="rgba(255, 255, 255, 0.4)" />
+            <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+            <Text style={styles.permissionSub}>
+              Camera access is needed to scan machine QR codes on the factory floor.
+            </Text>
+            <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
+              <Text style={styles.permissionBtnText}>GRANT CAMERA ACCESS</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Brand Crest in Viewfinder Header */}
         <View style={styles.viewfinderBrand}>
           <Image
@@ -122,19 +186,38 @@ export default function MachineQrScannerScreen() {
           <View style={[styles.corner, styles.tr]} />
           <View style={[styles.corner, styles.bl]} />
           <View style={[styles.corner, styles.br]} />
-          <Ionicons name="qr-code-outline" size={88} color="rgba(255, 255, 255, 0.45)" />
+          
+          {/* Animated/High-contrast scan laser beam */}
+          <View style={styles.scanBeam} />
+
+          {isValidating ? (
+            <View style={styles.validatingBadge}>
+              <ActivityIndicator color="#FFF" size="small" />
+              <Text style={styles.validatingText}>Validating Machine...</Text>
+            </View>
+          ) : (
+            <Ionicons name="qr-code-outline" size={88} color="rgba(255, 255, 255, 0.35)" />
+          )}
         </View>
 
-        <Text style={styles.instructionText}>
-          Scan the QR code attached to the milk pouch packing machine.
-        </Text>
+        {/* Live Scan Status Pill */}
+        <View style={styles.scanStatusPill}>
+          <Ionicons
+            name={scanned ? "checkmark-circle" : "scan-circle"}
+            size={14}
+            color={scanned ? "#4ade80" : "#38bdf8"}
+          />
+          <Text style={styles.scanStatusText}>
+            {scannedFeedback || "Point camera at machine QR sticker (auto-navigates on scan)"}
+          </Text>
+        </View>
       </View>
 
-      {/* Bottom Machine Selection Card */}
+      {/* Bottom Machine Quick-Select Card (Floor Fallback & Verification) */}
       <View style={[styles.resultCard, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
         <View style={styles.cardHeader}>
           <View>
-            <Text style={styles.identifiedLabel}>MACHINE QR IDENTIFIER</Text>
+            <Text style={styles.identifiedLabel}>TARGET PACKAGING MACHINE</Text>
             <Text style={styles.headCodeText}>
               {selectedMachine.machineId} • {selectedMachine.name}
             </Text>
@@ -188,8 +271,8 @@ export default function MachineQrScannerScreen() {
             <ActivityIndicator color="#FFF" />
           ) : (
             <>
-              <Ionicons name="arrow-forward-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
-              <Text style={styles.proceedBtnText}>VIEW MACHINE & SELECT HEAD</Text>
+              <Ionicons name="camera" size={20} color="#FFF" style={{ marginRight: 8 }} />
+              <Text style={styles.proceedBtnText}>OPEN DISPLAY CAMERA FOR {selectedMachine.machineId}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -218,169 +301,247 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "800",
-    letterSpacing: 0.5,
   },
   topBarSub: {
-    color: "#BAE6FD",
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 11,
-    fontWeight: "600",
-    marginTop: 1,
+    marginTop: 2,
   },
   iconBtn: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   iconBtnActive: {
-    backgroundColor: Colors.accent,
+    backgroundColor: "#f59e0b",
   },
   cameraBox: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    position: "relative",
+    backgroundColor: "#000000",
   },
-  viewfinderBrand: {
-    flexDirection: "row",
+  permissionContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#0f172a",
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(10, 115, 192, 0.4)",
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 20,
-    gap: 8,
+    padding: 24,
   },
-  aavinLogo: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  permissionTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: 14,
   },
-  brandTitleText: {
+  permissionSub: {
+    color: "#94a3b8",
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  permissionBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  permissionBtnText: {
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "800",
-    letterSpacing: 0.8,
+  },
+  viewfinderBrand: {
+    position: "absolute",
+    top: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(10, 25, 47, 0.85)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    zIndex: 10,
+  },
+  aavinLogo: {
+    width: 22,
+    height: 22,
+    marginRight: 6,
+  },
+  brandTitleText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   reticle: {
     width: 240,
     height: 240,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.3)",
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
   },
   corner: {
     position: "absolute",
-    width: 32,
-    height: 32,
-    borderColor: "#10B981",
+    width: 28,
+    height: 28,
+    borderColor: "#22c55e",
   },
-  tl: { top: -2, left: -2, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 18 },
-  tr: { top: -2, right: -2, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 18 },
-  bl: { bottom: -2, left: -2, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 18 },
-  br: { bottom: -2, right: -2, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 18 },
-  instructionText: {
-    color: "rgba(255, 255, 255, 0.9)",
-    fontSize: 13,
+  tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
+  tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
+  br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
+  scanBeam: {
+    position: "absolute",
+    left: 8,
+    right: 8,
+    height: 2,
+    backgroundColor: "#22c55e",
+    shadowColor: "#22c55e",
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  validatingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(14, 116, 144, 0.9)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  validatingText: {
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  scanStatusPill: {
+    position: "absolute",
+    bottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(15, 23, 42, 0.9)",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    maxWidth: "90%",
+  },
+  scanStatusText: {
+    color: "#e2e8f0",
+    fontSize: 11,
     fontWeight: "600",
-    marginTop: 20,
     textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 18,
   },
   resultCard: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 12,
   },
   identifiedLabel: {
     fontSize: 10,
     fontWeight: "800",
-    color: Colors.accent,
-    letterSpacing: 0.8,
+    color: "#64748b",
+    letterSpacing: 0.5,
   },
   headCodeText: {
-    fontSize: 17,
-    fontWeight: "900",
-    color: Colors.text,
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#0F172A",
     marginTop: 2,
   },
   verifiedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.successLight,
+    backgroundColor: "#ecfdf5",
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
     gap: 4,
   },
   verifiedText: {
-    fontSize: 11,
+    color: "#059669",
     fontWeight: "800",
-    color: Colors.success,
+    fontSize: 11,
   },
   switchLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.textSecondary,
+    color: "#64748b",
     marginBottom: 8,
   },
   pillScroll: {
-    marginBottom: 16,
+    flexDirection: "row",
+    marginBottom: 14,
   },
   machinePill: {
-    paddingHorizontal: 14,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: Colors.borderLight,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#e2e8f0",
     marginRight: 8,
+    minWidth: 80,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   machinePillActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: "#eff6ff",
+    borderColor: "#0A73C0",
   },
   machinePillText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "800",
-    color: Colors.text,
+    color: "#334155",
   },
   machinePillTextActive: {
-    color: "#FFFFFF",
+    color: "#0A73C0",
   },
   machinePillSub: {
     fontSize: 9,
-    color: Colors.textSecondary,
+    color: "#94a3b8",
     marginTop: 1,
-    fontWeight: "600",
   },
   machinePillSubActive: {
-    color: "#BAE6FD",
+    color: "#0284c7",
+    fontWeight: "700",
   },
   proceedBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    height: 50,
     flexDirection: "row",
+    height: 48,
+    backgroundColor: "#054C97",
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#054C97",
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
     elevation: 2,
   },
   proceedBtnText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "900",
     letterSpacing: 0.5,
   },
 });

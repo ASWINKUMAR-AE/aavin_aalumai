@@ -81,3 +81,4 @@ class MachineReadingOCR(Base):
     machine: Mapped["Machine"] = relationship("Machine")
     head: Mapped["Head"] = relationship("Head")
     reading: Mapped["Reading"] = relationship("Reading")
+

@@ -479,3 +479,4 @@ def get_machine_display_evidence_image(
             "X-Evidence-SHA256": r.image_sha256,
         },
     )
+
