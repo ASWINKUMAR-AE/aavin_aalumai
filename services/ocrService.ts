@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Platform } from "react-native";
 import { extractCounterDigits, ExtractedCounterResult } from "./counterExtractor";
 import { extractDualHeadMetrics, DualHeadOcrResult } from "./dualHeadOcrExtractor";
 export { DualHeadOcrResult } from "./dualHeadOcrExtractor";
@@ -89,27 +90,67 @@ export async function checkOcrHealth(): Promise<OcrHealthStatus> {
 }
 
 /**
- * Sends captured HMI photo to ZetHub OCR simple text endpoint (/api/v1/ocr/text).
+ * Builds multipart form data safely across React Native (Android/iOS), Web, and remote URLs.
  */
-export async function extractCounterText(imageUri: string): Promise<SimpleOcrResponse> {
+async function buildOcrFormData(imageUri: string): Promise<FormData> {
   const formData = new FormData();
+
+  // If remote public image URL, pass image_url for fast cloud OCR
+  if (
+    (imageUri.startsWith("http://") || imageUri.startsWith("https://")) &&
+    !imageUri.includes("localhost") &&
+    !imageUri.includes("127.0.0.1") &&
+    !imageUri.includes("10.0.2.2")
+  ) {
+    formData.append("image_url", imageUri);
+    return formData;
+  }
 
   const filename = imageUri.split("/").pop() || "counter_capture.jpg";
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : "image/jpeg";
 
+  // Web environment: Fetch blob for proper browser FormData handling
+  if (Platform.OS === "web") {
+    try {
+      const res = await fetch(imageUri);
+      const blob = await res.blob();
+      formData.append("file", blob, filename);
+      return formData;
+    } catch {
+      // Fall through to object
+    }
+  }
+
+  // Mobile environment (Android/iOS)
+  const cleanUri =
+    Platform.OS === "android" &&
+    !imageUri.startsWith("file://") &&
+    !imageUri.startsWith("content://")
+      ? `file://${imageUri}`
+      : imageUri;
+
   formData.append("file", {
-    uri: imageUri,
+    uri: cleanUri,
     name: filename,
     type,
   } as any);
+
+  return formData;
+}
+
+/**
+ * Sends captured HMI photo to ZetHub OCR simple text endpoint (/api/v1/ocr/text).
+ */
+export async function extractCounterText(imageUri: string): Promise<SimpleOcrResponse> {
+  const formData = await buildOcrFormData(imageUri);
 
   const startTime = Date.now();
   const response = await axios.post(`${OCR_BASE_URL}/api/v1/ocr/text`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
-    timeout: 30000,
+    timeout: 45000,
   });
 
   const durationSec = (Date.now() - startTime) / 1000;
@@ -129,23 +170,14 @@ export async function extractCounterText(imageUri: string): Promise<SimpleOcrRes
  * Sends captured HMI photo to ZetHub Full OCR endpoint (/api/v1/ocr).
  */
 export async function extractFullOcr(imageUri: string): Promise<FullOcrResponse> {
-  const formData = new FormData();
-  const filename = imageUri.split("/").pop() || "counter_capture.jpg";
-  const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1]}` : "image/jpeg";
-
-  formData.append("file", {
-    uri: imageUri,
-    name: filename,
-    type,
-  } as any);
+  const formData = await buildOcrFormData(imageUri);
 
   const startTime = Date.now();
   const response = await axios.post(`${OCR_BASE_URL}/api/v1/ocr`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
-    timeout: 30000,
+    timeout: 45000,
   });
 
   const durationSec = (Date.now() - startTime) / 1000;

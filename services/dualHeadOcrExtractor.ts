@@ -189,39 +189,51 @@ function extractSideMetrics(
 
     // 4. Recipe Number (e.g. RECIPE No. 3 or 2)
     if (upper.includes("RECIPE")) {
-      const candidates = sideBoxes.filter(
-        (c) => Math.abs(c.cy - b.cy) < 25 && c.cx > b.cx
-      );
-      if (candidates.length > 0) {
-        const num = parseInt(candidates[0].text.replace(/\D/g, ""), 10);
-        if (!isNaN(num)) {
-          recipeNumber = num;
-          confidences.push(candidates[0].confidence);
+      const candidates = sideBoxes
+        .filter((c) => Math.abs(c.cy - b.cy) < 30 && c.cx > b.cx)
+        .sort((x, y) => x.cx - y.cx);
+      for (const c of candidates) {
+        const digits = c.text.replace(/\D/g, "");
+        if (digits) {
+          const num = parseInt(digits, 10);
+          if (!isNaN(num) && num >= 1 && num <= 99) {
+            recipeNumber = num;
+            confidences.push(c.confidence);
+            break;
+          }
         }
       }
     }
 
     // 5. Feed Time (e.g. FEED TIME 0.10)
-    if (upper.includes("FEED TIME")) {
-      const candidates = sideBoxes.filter(
-        (c) => Math.abs(c.cy - b.cy) < 25 && c.cx > b.cx
-      );
-      if (candidates.length > 0) {
-        feedTime = candidates[0].text.trim();
-        confidences.push(candidates[0].confidence);
+    if (upper.includes("FEED TIME") || upper.includes("FEEDTIME")) {
+      const candidates = sideBoxes
+        .filter((c) => Math.abs(c.cy - b.cy) < 30 && c.cx > b.cx)
+        .sort((x, y) => x.cx - y.cx);
+      for (const c of candidates) {
+        const match = c.text.match(/\d+(\.\d+)?/);
+        if (match) {
+          feedTime = match[0];
+          confidences.push(c.confidence);
+          break;
+        }
       }
     }
 
     // 6. Machine Speed (e.g. SET 50 / 65)
-    if (upper === "SET") {
-      const candidates = sideBoxes.filter(
-        (c) => Math.abs(c.cy - b.cy) < 25 && c.cx > b.cx
-      );
-      if (candidates.length > 0) {
-        const spd = parseInt(candidates[0].text.replace(/\D/g, ""), 10);
-        if (!isNaN(spd)) {
-          machineSpeed = spd;
-          confidences.push(candidates[0].confidence);
+    if (upper === "SET" || upper.includes("MACHINESPEED") || upper.includes("MACHINE SPEED")) {
+      const candidates = sideBoxes
+        .filter((c) => Math.abs(c.cy - b.cy) < 30 && c.cx > b.cx)
+        .sort((x, y) => x.cx - y.cx);
+      for (const c of candidates) {
+        const digits = c.text.replace(/\D/g, "");
+        if (digits) {
+          const spd = parseInt(digits, 10);
+          if (!isNaN(spd) && spd >= 10 && spd <= 200) {
+            machineSpeed = spd;
+            confidences.push(c.confidence);
+            break;
+          }
         }
       }
     }
